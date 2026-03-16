@@ -1,71 +1,82 @@
 import { Injectable } from '@nestjs/common';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { TaskEntity, TaskStatus } from './task.entity';
+import { TasksRepository } from './tasks.repository';
 
-export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: TaskStatus;
-}
-
-export enum TaskStatus {
-  OPEN = 'OPEN',
-  IN_PROGRESS = 'IN_PROGRESS',
-  DONE = 'DONE',
-}
+export type Task = TaskEntity;
 
 @Injectable()
 export class TasksService {
-  private tasks: Task[] = [
-    {
-      id: '1',
-      title: 'Belajar NestJS',
-      description: 'Mempelajari dasar-dasar framework NestJS',
-      status: TaskStatus.OPEN,
-    },
-    {
-      id: '2',
-      title: 'Membuat REST API',
-      description: 'Membuat REST API untuk manajemen tugas',
-      status: TaskStatus.IN_PROGRESS,
-    },
-    {
-      id: '3',
-      title: 'Setup Database',
-      description: 'Konfigurasi koneksi database PostgreSQL',
-      status: TaskStatus.DONE,
-    },
-  ];
+  constructor(private tasksRepository: TasksRepository) {}
 
-  getAllTasks(): Task[] {
-    return this.tasks;
+  getAllTasks(): Promise<TaskEntity[]> {
+    return this.tasksRepository.find();
   }
 
-  getTaskById(id: string): Task | undefined {
-    return this.tasks.find((task) => task.id === id);
+  getTaskById(id: string): Promise<TaskEntity | null> {
+    return this.tasksRepository.findOneBy({ id });
   }
 
-  createTask(createTaskDto: CreateTaskDto): Task {
+  createTask(createTaskDto: CreateTaskDto): Promise<TaskEntity> {
     const { title, description } = createTaskDto;
-    const task: Task = {
-      id: Date.now().toString(),
+    const task = this.tasksRepository.create({
       title,
       description,
-      status: TaskStatus.OPEN,
-    };
-    this.tasks.push(task);
-    return task;
+      status: TaskStatus.TODO,
+    });
+    return this.tasksRepository.save(task);
   }
 
-  deleteTask(id: string): void {
-    this.tasks = this.tasks.filter((task) => task.id !== id);
+  async deleteTask(id: string): Promise<void> {
+    await this.tasksRepository.delete(id);
   }
 
-  updateTaskStatus(id: string, status: TaskStatus): Task | undefined {
-    const task = this.getTaskById(id);
-    if (task) {
-      task.status = status;
-    }
-    return task;
+  async updateTaskStatus(
+    id: string,
+    status: TaskStatus,
+  ): Promise<TaskEntity | null> {
+    await this.tasksRepository.update(id, { status });
+    return this.tasksRepository.findOneBy({ id });
+  }
+
+  // ============ Custom Query Methods ============
+
+  /**
+   * Cari task berdasarkan status tertentu
+   */
+  getTasksByStatus(status: TaskStatus): Promise<TaskEntity[]> {
+    return this.tasksRepository.findByStatus(status);
+  }
+
+  /**
+   * Ambil task terbaru
+   */
+  getRecentTasks(limit?: number): Promise<TaskEntity[]> {
+    return this.tasksRepository.findRecentTasks(limit);
+  }
+
+  /**
+   * Ambil task yang sudah completed
+   */
+  getCompletedTasks(): Promise<TaskEntity[]> {
+    return this.tasksRepository.findCompletedTasks();
+  }
+
+  /**
+   * Hitung statistik task per status
+   */
+  getTaskStatistics(): Promise<{
+    todo: number;
+    inProgress: number;
+    done: number;
+  }> {
+    return this.tasksRepository.countByStatus();
+  }
+
+  /**
+   * Search task berdasarkan keyword
+   */
+  searchTasks(keyword: string): Promise<TaskEntity[]> {
+    return this.tasksRepository.searchTasks(keyword);
   }
 }
