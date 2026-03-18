@@ -11,8 +11,8 @@ export class ActivitiesEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
-  name: string;
+  @Column({ name: 'name', type: 'varchar' })
+  title: string;
 
   @Column('text')
   description: string;
@@ -23,8 +23,8 @@ export class ActivitiesEntity {
   @Column('decimal', { precision: 10, scale: 2 })
   price: number;
 
-  @Column('int')
-  maxParticipants: number;
+  @Column({ name: 'maxParticipants', type: 'int' })
+  availableSlots: number;
 
   @Column('int', { default: 0 })
   currentParticipants: number;
@@ -49,4 +49,22 @@ export class ActivitiesEntity {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  // Backward compatibility for existing services/mappers
+  get name(): string {
+    return this.title;
+  }
+
+  set name(value: string) {
+    this.title = value;
+  }
+
+  // Backward compatibility for existing booking logic
+  get maxParticipants(): number {
+    return this.availableSlots;
+  }
+
+  set maxParticipants(value: number) {
+    this.availableSlots = value;
+  }
 }
