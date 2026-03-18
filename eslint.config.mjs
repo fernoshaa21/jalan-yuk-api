@@ -29,7 +29,13 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',
+<<<<<<< HEAD
       "prettier/prettier": ["error", { endOfLine: "auto" }],
+=======
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      'prettier/prettier': ['error', { endOfLine: 'auto' }],
+>>>>>>> a624e17ae22546c11ff0bfc9b09344961058917f
     },
   },
 );
