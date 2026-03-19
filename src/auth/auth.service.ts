@@ -1,16 +1,26 @@
 import {
+  BadRequestException,
   Injectable,
   ConflictException,
+  InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { QueryFailedError, Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { UserEntity } from '../users/entities/user.entity/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+
+type PgDriverError = {
+  code?: string;
+  detail?: string;
+  column?: string;
+  constraint?: string;
+  message?: string;
+};
 
 @Injectable()
 export class AuthService {
@@ -22,50 +32,93 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
-    const { email, password, fullName, phoneNumber } = registerDto;
+    const email = registerDto.email?.trim().toLowerCase();
+    const password = registerDto.password;
+    const fullName = registerDto.fullName?.trim();
+    const phoneNumber = registerDto.phoneNumber?.trim();
 
-    // Check if user already exists
-    const existingUser = await this.usersRepository.findOne({
-      where: { email },
-    });
-
-    if (existingUser) {
-      throw new ConflictException('Email already exists');
+    if (!email || !password || !fullName || !phoneNumber) {
+      throw new BadRequestException(
+        'email, password, fullName, and phoneNumber are required',
+      );
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    try {
+      const existingUser = await this.usersRepository.findOne({
+        where: { email },
+      });
 
-    // Create new user
-    const user = this.usersRepository.create({
-      email,
-      password: hashedPassword,
-      fullName,
-      phoneNumber,
-      isActive: true,
-    });
+      if (existingUser) {
+        throw new ConflictException('Email already exists');
+      }
 
-    const savedUser = await this.usersRepository.save(user);
+      const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Generate JWT token
-    const payload = {
-      sub: savedUser.id,
-      email: savedUser.email,
-      role: savedUser.role,
-    };
-    const accessToken = this.jwtService.sign(payload);
+      const user = this.usersRepository.create({
+        email,
+        password: hashedPassword,
+        fullName,
+        phoneNumber,
+        isActive: true,
+      });
 
-    return {
-      message: 'User registered successfully',
-      accessToken,
-      user: {
-        id: savedUser.id,
+      const savedUser = await this.usersRepository.save(user);
+
+      // Generate JWT token
+      const payload = {
+        sub: savedUser.id,
         email: savedUser.email,
-        fullName: savedUser.fullName,
-        phoneNumber: savedUser.phoneNumber,
         role: savedUser.role,
-      },
-    };
+      };
+      const accessToken = this.jwtService.sign(payload);
+
+      return {
+        message: 'User registered successfully',
+        accessToken,
+        user: {
+          id: savedUser.id,
+          email: savedUser.email,
+          fullName: savedUser.fullName,
+          phoneNumber: savedUser.phoneNumber,
+          role: savedUser.role,
+        },
+      };
+    } catch (error: unknown) {
+      if (
+        error instanceof ConflictException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+
+      if (error instanceof QueryFailedError) {
+        const driverError = error as QueryFailedError & {
+          driverError?: PgDriverError;
+        };
+        const code = driverError.driverError?.code;
+        const detail = driverError.driverError?.detail;
+        const message = driverError.driverError?.message;
+
+        if (code === '23505') {
+          throw new ConflictException('Email already exists');
+        }
+
+        if (code === '23502') {
+          throw new BadRequestException('Invalid register payload');
+        }
+
+        if (
+          code === '42703' &&
+          (detail?.includes('role') || message?.includes('role'))
+        ) {
+          throw new InternalServerErrorException(
+            'Database schema is outdated. Run migrations and retry.',
+          );
+        }
+      }
+
+      throw new InternalServerErrorException('Failed to register user');
+    }
   }
 
   async login(loginDto: LoginDto) {
