@@ -23,13 +23,13 @@ export class PaymentsService {
     private readonly bookingsRepository: Repository<BookingEntity>,
   ) {}
 
-  async createPayment(dto: CreatePaymentDto) {
+  async createPayment(userId: number, dto: CreatePaymentDto) {
     this.validateBookingId(dto.bookingId);
     this.validatePaymentMethod(dto.method);
 
     const booking = await this.bookingsRepository.findOne({
-      where: { id: dto.bookingId },
-      relations: ['activity'],
+      where: { id: dto.bookingId, user: { id: userId } },
+      relations: ['activity', 'user'],
     });
 
     if (!booking) {
@@ -89,7 +89,11 @@ export class PaymentsService {
     );
   }
 
-  async payBooking(bookingId: string, method: CreatePaymentDto['method']) {
+  async payBooking(
+    userId: number,
+    bookingId: string,
+    method: CreatePaymentDto['method'],
+  ) {
     this.validateBookingId(bookingId);
     this.validatePaymentMethod(method);
 
@@ -99,8 +103,8 @@ export class PaymentsService {
         const paymentRepository = manager.getRepository(PaymentEntity);
 
         const booking = await bookingRepository.findOne({
-          where: { id: bookingId },
-          relations: ['activity'],
+          where: { id: bookingId, user: { id: userId } },
+          relations: ['activity', 'user'],
         });
 
         if (!booking) {
@@ -150,7 +154,7 @@ export class PaymentsService {
     return result;
   }
 
-  async cancelPayment(bookingId: string) {
+  async cancelPayment(userId: number, bookingId: string) {
     this.validateBookingId(bookingId);
 
     const result = await this.paymentsRepository.manager.transaction(
@@ -159,7 +163,7 @@ export class PaymentsService {
         const paymentRepository = manager.getRepository(PaymentEntity);
 
         const booking = await bookingRepository.findOne({
-          where: { id: bookingId },
+          where: { id: bookingId, user: { id: userId } },
         });
 
         if (!booking) {
@@ -193,8 +197,17 @@ export class PaymentsService {
     return result;
   }
 
-  async getPaymentByBookingId(bookingId: string) {
+  async getPaymentByBookingId(userId: number, bookingId: string) {
     this.validateBookingId(bookingId);
+
+    const booking = await this.bookingsRepository.findOne({
+      where: { id: bookingId, user: { id: userId } },
+      select: ['id'],
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
 
     const payment = await this.paymentsRepository.findOne({
       where: { booking: { id: bookingId } },

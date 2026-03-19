@@ -1,4 +1,14 @@
-# Jalan Yuk API - Activities Endpoints Documentation
+# ⚠️ Deprecated Document
+
+Dokumentasi endpoint yang **resmi dan terbaru** sekarang ada di:
+
+- [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
+
+File ini dipertahankan hanya untuk kompatibilitas lama. Gunakan file di atas sebagai **single source of truth** agar tidak ada dua versi dokumentasi.
+
+---
+
+# Jalan Yuk API - Activities Endpoints Documentation (Legacy)
 
 ## 1. GET /activities
 

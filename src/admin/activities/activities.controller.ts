@@ -22,24 +22,42 @@ export class ActivitiesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Post()
-  createActivity(@Body() dto: CreateActivityDto) {
-    return this.activitiesService.createActivity(dto);
+  async createActivity(@Body() dto: CreateActivityDto) {
+    const activity = await this.activitiesService.createActivity(dto);
+    return {
+      data: activity,
+      message: 'Activity created successfully',
+      meta: null,
+    };
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Patch(':id')
-  updateActivity(
+  async updateActivity(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateActivityDto,
   ) {
-    return this.activitiesService.updateActivity(id, dto);
+    const activity = await this.activitiesService.updateActivity(id, dto);
+    return {
+      data: activity,
+      message: 'Activity updated successfully',
+      meta: null,
+    };
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Delete(':id')
-  deleteActivity(@Param('id', ParseIntPipe) id: number) {
-    return this.activitiesService.deleteActivity(id);
+  async deleteActivity(@Param('id', ParseIntPipe) id: number) {
+    const result = await this.activitiesService.deleteActivity(id);
+    return {
+      data: {
+        id: result.id,
+        isActive: result.isActive,
+      },
+      message: result.message,
+      meta: null,
+    };
   }
 }

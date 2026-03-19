@@ -1,0 +1,781 @@
+# Jalan Yuk API Documentation
+
+API ini dibuat untuk aplikasi booking activity/tour berbasis NestJS + TypeORM + PostgreSQL.
+
+## Base URL
+
+`http://localhost:3000`
+
+## Response Standard
+
+Semua endpoint memakai format:
+
+```json
+{
+  "data": {},
+  "message": "...",
+  "meta": {}
+}
+```
+
+- `data`: payload utama
+- `message`: pesan ringkas
+- `meta`: informasi tambahan (pagination/total), `null` bila tidak ada
+
+## Authorization (JWT)
+
+Endpoint yang butuh auth harus mengirim header:
+
+```http
+Authorization: Bearer <accessToken>
+```
+
+Contoh:
+
+```http
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+---
+
+## 1) Auth Module
+
+### 1.1 Register
+
+- **Method**: `POST`
+- **URL**: `/auth/register`
+- **Auth**: Tidak
+- **Deskripsi**: Daftar user baru dan langsung mendapatkan token.
+
+#### Request Body
+
+```json
+{
+  "email": "user@mail.com",
+  "password": "secret123",
+  "fullName": "Budi Santoso",
+  "phoneNumber": "+628123456789"
+}
+```
+
+#### Response 201
+
+```json
+{
+  "data": {
+    "accessToken": "jwt_token_here",
+    "user": {
+      "id": 1,
+      "email": "user@mail.com",
+      "fullName": "Budi Santoso",
+      "phoneNumber": "+628123456789",
+      "role": "user"
+    }
+  },
+  "message": "User registered successfully",
+  "meta": null
+}
+```
+
+---
+
+### 1.2 Login
+
+- **Method**: `POST`
+- **URL**: `/auth/login`
+- **Auth**: Tidak
+- **Deskripsi**: Login user dan dapatkan token JWT.
+
+#### Request Body
+
+```json
+{
+  "email": "user@mail.com",
+  "password": "secret123"
+}
+```
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "accessToken": "jwt_token_here",
+    "user": {
+      "id": 1,
+      "email": "user@mail.com",
+      "fullName": "Budi Santoso",
+      "phoneNumber": "+628123456789",
+      "role": "user"
+    }
+  },
+  "message": "Login successful",
+  "meta": null
+}
+```
+
+---
+
+### 1.3 Profile
+
+- **Method**: `GET`
+- **URL**: `/auth/profile`
+- **Auth**: Ya (Bearer token)
+- **Deskripsi**: Ambil profil user yang sedang login.
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "id": 1,
+    "email": "user@mail.com",
+    "fullName": "Budi Santoso",
+    "phoneNumber": "+628123456789",
+    "avatarUrl": null,
+    "isActive": true,
+    "role": "user"
+  },
+  "message": "Profile retrieved successfully",
+  "meta": null
+}
+```
+
+---
+
+### 1.4 Logout
+
+- **Method**: `POST`
+- **URL**: `/auth/logout`
+- **Auth**: Tidak (opsional dipanggil dari client)
+- **Deskripsi**: Logout stateless (hapus token di client).
+
+#### Response 200
+
+```json
+{
+  "data": null,
+  "message": "Logout successful",
+  "meta": null
+}
+```
+
+---
+
+## 2) Activities Module
+
+### 2.1 List Activities (Home)
+
+- **Method**: `GET`
+- **URL**: `/activities`
+- **Auth**: Tidak
+- **Deskripsi**: Ambil daftar activity + pagination + filter.
+
+#### Query Params
+
+- `search` (optional, string)
+- `category` (optional, string)
+- `featured` (optional, boolean: `true/false`)
+- `page` (optional, number, default `1`)
+- `limit` (optional, number, default `10`, max `100`)
+
+Contoh URL:
+
+`/activities?search=jeep&category=adventure&featured=true&page=1&limit=10`
+
+#### Response 200
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "title": "Jeep Adventure Bromo",
+      "description": "Tour jeep sunrise Bromo.",
+      "location": "Bromo, Jawa Timur",
+      "price": 350000,
+      "availableSlots": 6,
+      "currentParticipants": 2,
+      "imageUrl": "https://cdn.example.com/bromo.jpg",
+      "isFeatured": true,
+      "isActive": true,
+      "category": "adventure",
+      "rating": 4.8,
+      "createdAt": "2026-03-10T08:00:00.000Z",
+      "updatedAt": "2026-03-15T10:30:00.000Z"
+    }
+  ],
+  "message": "Activities retrieved successfully",
+  "meta": {
+    "total": 1,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 1,
+    "hasNextPage": false,
+    "hasPrevPage": false
+  }
+}
+```
+
+---
+
+### 2.2 Featured Activities
+
+- **Method**: `GET`
+- **URL**: `/activities/featured`
+- **Auth**: Tidak
+- **Deskripsi**: Ambil activity unggulan.
+
+#### Response 200
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "title": "Jeep Adventure Bromo",
+      "description": "Tour jeep sunrise Bromo.",
+      "location": "Bromo, Jawa Timur",
+      "price": 350000,
+      "availableSlots": 6,
+      "currentParticipants": 2,
+      "imageUrl": "https://cdn.example.com/bromo.jpg",
+      "isFeatured": true,
+      "isActive": true,
+      "category": "adventure",
+      "rating": 4.8,
+      "createdAt": "2026-03-10T08:00:00.000Z",
+      "updatedAt": "2026-03-15T10:30:00.000Z"
+    }
+  ],
+  "message": "Featured activities retrieved successfully",
+  "meta": {
+    "total": 1
+  }
+}
+```
+
+---
+
+### 2.3 Activity Detail
+
+- **Method**: `GET`
+- **URL**: `/activities/:id`
+- **Auth**: Tidak
+- **Deskripsi**: Ambil detail activity untuk halaman detail + booking form.
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "id": 1,
+    "title": "Jeep Adventure Bromo",
+    "description": "Tour jeep sunrise Bromo.",
+    "price": 350000,
+    "location": "Bromo, Jawa Timur",
+    "availableSlots": 4,
+    "imageUrl": "https://cdn.example.com/bromo.jpg",
+    "isFeatured": true,
+    "category": "adventure",
+    "rating": 4.8,
+    "availableDates": ["2026-03-19", "2026-03-20", "2026-03-21"],
+    "currentParticipants": 2,
+    "maxParticipants": 6
+  },
+  "message": "Activity retrieved successfully",
+  "meta": null
+}
+```
+
+---
+
+## 3) Booking Module
+
+### 3.1 Create Booking
+
+- **Method**: `POST`
+- **URL**: `/bookings`
+- **Auth**: Ya (Bearer token)
+- **Deskripsi**: Buat booking, total harga dihitung otomatis.
+
+#### Request Body
+
+```json
+{
+  "activityId": 1,
+  "bookingDate": "2026-03-25",
+  "qty": 2
+}
+```
+
+#### Response 201/200
+
+```json
+{
+  "data": {
+    "id": "7fc3f5f8-2281-43ee-a936-478e0f15e8f5",
+    "activity": {
+      "id": 1,
+      "title": "Jeep Adventure Bromo",
+      "imageUrl": "https://cdn.example.com/bromo.jpg",
+      "location": "Bromo, Jawa Timur"
+    },
+    "bookingDate": "2026-03-25T00:00:00.000Z",
+    "qty": 2,
+    "unitPrice": 350000,
+    "totalPrice": 700000,
+    "status": "pending",
+    "createdAt": "2026-03-19T10:10:10.000Z"
+  },
+  "message": "Booking created successfully",
+  "meta": null
+}
+```
+
+---
+
+## 4) Payment Module (Mock)
+
+### 4.1 Create Payment
+
+- **Method**: `POST`
+- **URL**: `/payments`
+- **Auth**: Ya (Bearer token)
+- **Deskripsi**: Buat payment record status `pending` untuk booking milik user.
+
+#### Request Body
+
+```json
+{
+  "bookingId": "7fc3f5f8-2281-43ee-a936-478e0f15e8f5",
+  "method": "bank_transfer"
+}
+```
+
+#### Response 201/200
+
+```json
+{
+  "data": {
+    "bookingId": "7fc3f5f8-2281-43ee-a936-478e0f15e8f5",
+    "paymentId": "199a9084-df32-4dd4-b98c-f8fb69cc8f75",
+    "method": "bank_transfer",
+    "paymentStatus": "pending",
+    "amount": 700000,
+    "paidAt": null
+  },
+  "message": "Payment record created successfully",
+  "meta": null
+}
+```
+
+---
+
+### 4.2 Pay Booking (Mock Mark as Paid)
+
+- **Method**: `POST`
+- **URL**: `/payments/:bookingId/pay`
+- **Auth**: Ya (Bearer token)
+- **Deskripsi**: Simulasi pembayaran sukses (`paymentStatus=paid`, `bookingStatus=confirmed`).
+
+#### Request Body
+
+```json
+{
+  "method": "gopay"
+}
+```
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "bookingId": "7fc3f5f8-2281-43ee-a936-478e0f15e8f5",
+    "paymentId": "199a9084-df32-4dd4-b98c-f8fb69cc8f75",
+    "method": "gopay",
+    "paymentStatus": "paid",
+    "amount": 700000,
+    "paidAt": "2026-03-19T11:00:00.000Z"
+  },
+  "message": "Payment completed successfully",
+  "meta": null
+}
+```
+
+---
+
+### 4.3 Cancel Payment
+
+- **Method**: `PATCH`
+- **URL**: `/payments/:bookingId/cancel`
+- **Auth**: Ya (Bearer token)
+- **Deskripsi**: Batalkan payment + booking milik user.
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "bookingId": "7fc3f5f8-2281-43ee-a936-478e0f15e8f5",
+    "paymentId": "199a9084-df32-4dd4-b98c-f8fb69cc8f75",
+    "method": "bank_transfer",
+    "paymentStatus": "cancelled",
+    "amount": 700000,
+    "paidAt": null
+  },
+  "message": "Payment cancelled successfully",
+  "meta": null
+}
+```
+
+---
+
+### 4.4 Get Payment by Booking
+
+- **Method**: `GET`
+- **URL**: `/payments/:bookingId`
+- **Auth**: Ya (Bearer token)
+- **Deskripsi**: Lihat status pembayaran untuk booking milik user.
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "id": "199a9084-df32-4dd4-b98c-f8fb69cc8f75",
+    "bookingId": "7fc3f5f8-2281-43ee-a936-478e0f15e8f5",
+    "method": "bank_transfer",
+    "paymentStatus": "pending",
+    "paidAt": null,
+    "externalRef": null,
+    "createdAt": "2026-03-19T10:10:30.000Z",
+    "updatedAt": "2026-03-19T10:10:30.000Z"
+  },
+  "message": "Payment retrieved successfully",
+  "meta": null
+}
+```
+
+---
+
+## 5) My Booking Module
+
+### 5.1 List My Bookings
+
+- **Method**: `GET`
+- **URL**: `/bookings/my`
+- **Auth**: Ya (Bearer token)
+- **Deskripsi**: List booking user login + filter status.
+
+#### Query Params
+
+- `page` (optional, default `1`)
+- `limit` (optional, default `10`)
+- `status` (optional: `pending|confirmed|cancelled`)
+- `paymentStatus` (optional: `pending|paid|cancelled`)
+
+Contoh URL:
+
+`/bookings/my?page=1&limit=10&status=pending`
+
+#### Response 200
+
+```json
+{
+  "data": [
+    {
+      "id": "7fc3f5f8-2281-43ee-a936-478e0f15e8f5",
+      "activity": {
+        "id": 1,
+        "title": "Jeep Adventure Bromo",
+        "imageUrl": "https://cdn.example.com/bromo.jpg",
+        "location": "Bromo, Jawa Timur"
+      },
+      "bookingDate": "2026-03-25T00:00:00.000Z",
+      "qty": 2,
+      "totalPrice": 700000,
+      "bookingStatus": "pending",
+      "paymentStatus": "pending",
+      "createdAt": "2026-03-19T10:10:10.000Z"
+    }
+  ],
+  "message": "My bookings retrieved successfully",
+  "meta": {
+    "total": 1,
+    "page": 1,
+    "limit": 10,
+    "totalPages": 1
+  }
+}
+```
+
+---
+
+### 5.2 Booking Detail
+
+- **Method**: `GET`
+- **URL**: `/bookings/:id`
+- **Auth**: Ya (Bearer token)
+- **Deskripsi**: Detail booking milik user.
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "id": "7fc3f5f8-2281-43ee-a936-478e0f15e8f5",
+    "activity": {
+      "id": 1,
+      "title": "Jeep Adventure Bromo",
+      "imageUrl": "https://cdn.example.com/bromo.jpg",
+      "location": "Bromo, Jawa Timur",
+      "price": 350000
+    },
+    "bookingDate": "2026-03-25T00:00:00.000Z",
+    "qty": 2,
+    "unitPrice": 350000,
+    "totalPrice": 700000,
+    "bookingStatus": "pending",
+    "payment": {
+      "id": "199a9084-df32-4dd4-b98c-f8fb69cc8f75",
+      "method": "bank_transfer",
+      "paymentStatus": "pending",
+      "paidAt": null
+    },
+    "createdAt": "2026-03-19T10:10:10.000Z"
+  },
+  "message": "Booking detail retrieved successfully",
+  "meta": null
+}
+```
+
+---
+
+### 5.3 Cancel Booking
+
+- **Method**: `PATCH`
+- **URL**: `/bookings/:id/cancel`
+- **Auth**: Ya (Bearer token)
+- **Deskripsi**: Batalkan booking milik user (jika belum paid/confirmed).
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "bookingId": "7fc3f5f8-2281-43ee-a936-478e0f15e8f5",
+    "bookingStatus": "cancelled",
+    "paymentStatus": "cancelled"
+  },
+  "message": "Booking cancelled successfully",
+  "meta": null
+}
+```
+
+---
+
+## 6) Admin Activities Module
+
+Semua endpoint admin butuh:
+
+- JWT valid
+- role `admin`
+
+### 6.1 Create Activity
+
+- **Method**: `POST`
+- **URL**: `/admin/activities`
+- **Auth**: Ya (Bearer token, admin)
+
+#### Request Body
+
+```json
+{
+  "title": "Rafting Cisadane",
+  "description": "Paket rafting seru untuk pemula dan profesional",
+  "category": "adventure",
+  "location": "Bogor",
+  "price": 275000,
+  "availableSlots": 20,
+  "imageUrl": "https://cdn.example.com/rafting.jpg",
+  "isFeatured": false,
+  "rating": 4.6,
+  "isActive": true
+}
+```
+
+#### Response 201/200
+
+```json
+{
+  "data": {
+    "id": 10,
+    "title": "Rafting Cisadane",
+    "description": "Paket rafting seru untuk pemula dan profesional",
+    "category": "adventure",
+    "location": "Bogor",
+    "price": 275000,
+    "availableSlots": 20,
+    "imageUrl": "https://cdn.example.com/rafting.jpg",
+    "isFeatured": false,
+    "rating": 4.6,
+    "isActive": true,
+    "createdAt": "2026-03-19T11:20:00.000Z",
+    "updatedAt": "2026-03-19T11:20:00.000Z"
+  },
+  "message": "Activity created successfully",
+  "meta": null
+}
+```
+
+---
+
+### 6.2 Update Activity
+
+- **Method**: `PATCH`
+- **URL**: `/admin/activities/:id`
+- **Auth**: Ya (Bearer token, admin)
+
+#### Request Body (partial)
+
+```json
+{
+  "price": 300000,
+  "availableSlots": 24,
+  "isFeatured": true
+}
+```
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "id": 10,
+    "title": "Rafting Cisadane",
+    "description": "Paket rafting seru untuk pemula dan profesional",
+    "category": "adventure",
+    "location": "Bogor",
+    "price": 300000,
+    "availableSlots": 24,
+    "imageUrl": "https://cdn.example.com/rafting.jpg",
+    "isFeatured": true,
+    "rating": 4.6,
+    "isActive": true,
+    "createdAt": "2026-03-19T11:20:00.000Z",
+    "updatedAt": "2026-03-19T11:30:00.000Z"
+  },
+  "message": "Activity updated successfully",
+  "meta": null
+}
+```
+
+---
+
+### 6.3 Delete Activity (Soft Delete)
+
+- **Method**: `DELETE`
+- **URL**: `/admin/activities/:id`
+- **Auth**: Ya (Bearer token, admin)
+- **Deskripsi**: Tidak hapus fisik. `isActive` di-set `false`.
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "id": 10,
+    "isActive": false
+  },
+  "message": "Activity deleted successfully",
+  "meta": null
+}
+```
+
+---
+
+## Error Response Examples
+
+### 400 Bad Request
+
+```json
+{
+  "statusCode": 400,
+  "message": ["qty must not be less than 1"],
+  "error": "Bad Request"
+}
+```
+
+### 401 Unauthorized
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+### 404 Not Found
+
+```json
+{
+  "statusCode": 404,
+  "message": "Booking not found",
+  "error": "Not Found"
+}
+```
+
+---
+
+## Mobile Integration Flow (Flutter) - Step by Step
+
+### Step 1 — Register atau Login
+
+1. Panggil `POST /auth/register` (sekali saat user baru) atau `POST /auth/login`.
+2. Simpan `accessToken` ke secure storage (misalnya `flutter_secure_storage`).
+3. Simpan profil ringkas (`id`, `fullName`, `role`) di state app.
+
+### Step 2 — Get Activities (Home)
+
+1. Panggil `GET /activities?page=1&limit=10`.
+2. Untuk filter kategori/search, tambahkan query params (`category`, `search`, `featured`).
+3. Tampilkan card list memakai `data[]`.
+
+### Step 3 — Open Activity Detail
+
+1. Saat item di-tap, panggil `GET /activities/{id}`.
+2. Ambil `availableDates`, `availableSlots`, dan `price` untuk form booking.
+
+### Step 4 — Create Booking
+
+1. User pilih tanggal + jumlah tiket.
+2. Panggil `POST /bookings` dengan Bearer token.
+3. Ambil `bookingId` dari response untuk langkah payment.
+
+### Step 5 — Create Payment
+
+1. Panggil `POST /payments` dengan `bookingId` + `method`.
+2. Untuk simulasi bayar sukses, panggil `POST /payments/{bookingId}/pay`.
+3. Tampilkan status dari `paymentStatus`.
+
+### Step 6 — Lihat My Bookings
+
+1. Panggil `GET /bookings/my?page=1&limit=10`.
+2. Untuk filter status, gunakan `status` atau `paymentStatus`.
+3. Untuk detail item, panggil `GET /bookings/{bookingId}`.
+
+### Step 7 — Cancel Booking (Opsional)
+
+1. Panggil `PATCH /bookings/{bookingId}/cancel`.
+2. Refresh list my bookings.
+3. Tampilkan status terbaru booking/payment.
+
+---
+
+## Notes for Recruiter / Portfolio
+
+- API sudah menerapkan JWT auth dan role-based access untuk admin endpoint.
+- Struktur response disederhanakan agar nyaman untuk konsumsi Flutter (`data`, `message`, `meta`).
+- Payment saat ini masih **mock/manual** (belum terintegrasi payment gateway).

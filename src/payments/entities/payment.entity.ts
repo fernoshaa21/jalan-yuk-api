@@ -28,7 +28,7 @@ export class PaymentEntity {
     nullable: false,
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'bookingId' })
+  @JoinColumn({ name: 'booking_id' })
   booking: BookingEntity;
 
   @RelationId((payment: PaymentEntity) => payment.booking)

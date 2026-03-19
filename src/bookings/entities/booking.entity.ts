@@ -28,14 +28,14 @@ export class BookingEntity {
   id: string;
 
   @ManyToOne(() => UserEntity, { nullable: false, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'userId' })
+  @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
   @RelationId((booking: BookingEntity) => booking.user)
   userId: number;
 
   @ManyToOne(() => ActivitiesEntity, { nullable: false, onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'activityId' })
+  @JoinColumn({ name: 'activity_id' })
   activity: ActivitiesEntity;
 
   @RelationId((booking: BookingEntity) => booking.activity)

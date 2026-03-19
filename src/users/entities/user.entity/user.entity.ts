@@ -28,6 +28,9 @@ export class UserEntity {
   @Column({ nullable: true, type: 'varchar' })
   avatarUrl: string | null;
 
+  @Column({ type: 'varchar', length: 20, default: 'user' })
+  role: string;
+
   @Column({ default: true })
   isActive: boolean;
 

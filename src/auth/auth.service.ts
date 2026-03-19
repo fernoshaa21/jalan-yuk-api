@@ -48,7 +48,11 @@ export class AuthService {
     const savedUser = await this.usersRepository.save(user);
 
     // Generate JWT token
-    const payload = { sub: savedUser.id, email: savedUser.email };
+    const payload = {
+      sub: savedUser.id,
+      email: savedUser.email,
+      role: savedUser.role,
+    };
     const accessToken = this.jwtService.sign(payload);
 
     return {
@@ -59,6 +63,7 @@ export class AuthService {
         email: savedUser.email,
         fullName: savedUser.fullName,
         phoneNumber: savedUser.phoneNumber,
+        role: savedUser.role,
       },
     };
   }
@@ -88,7 +93,7 @@ export class AuthService {
     }
 
     // Generate JWT token
-    const payload = { sub: user.id, email: user.email };
+    const payload = { sub: user.id, email: user.email, role: user.role };
     const accessToken = this.jwtService.sign(payload);
 
     return {
@@ -99,6 +104,7 @@ export class AuthService {
         email: user.email,
         fullName: user.fullName,
         phoneNumber: user.phoneNumber,
+        role: user.role,
       },
     };
   }
@@ -119,6 +125,7 @@ export class AuthService {
       phoneNumber: user.phoneNumber,
       avatarUrl: user.avatarUrl,
       isActive: user.isActive,
+      role: user.role,
     };
   }
 }

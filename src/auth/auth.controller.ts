@@ -19,29 +19,52 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+  async register(@Body() registerDto: RegisterDto) {
+    const result = await this.authService.register(registerDto);
+    return {
+      data: {
+        accessToken: result.accessToken,
+        user: result.user,
+      },
+      message: result.message,
+      meta: null,
+    };
   }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(@Body() loginDto: LoginDto) {
+    const result = await this.authService.login(loginDto);
+    return {
+      data: {
+        accessToken: result.accessToken,
+        user: result.user,
+      },
+      message: result.message,
+      meta: null,
+    };
   }
 
   @Get('profile')
   @UseGuards(JwtAuthGuard)
-  getProfile(@Request() req: any) {
+  async getProfile(@Request() req: any) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const userId = req.user.sub as number;
-    return this.authService.validateUser(userId);
+    const profile = await this.authService.validateUser(userId);
+    return {
+      data: profile,
+      message: 'Profile retrieved successfully',
+      meta: null,
+    };
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   logout() {
     return {
+      data: null,
       message: 'Logout successful',
+      meta: null,
     };
   }
 }

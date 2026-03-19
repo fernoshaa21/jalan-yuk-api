@@ -119,7 +119,7 @@ export class BookingsService {
       .createQueryBuilder('booking')
       .leftJoinAndSelect('booking.activity', 'activity')
       .leftJoinAndSelect('booking.payment', 'payment')
-      .where('booking.userId = :userId', { userId });
+      .where('booking.user_id = :userId', { userId });
 
     if (normalizedStatus) {
       query.andWhere('booking.status = :status', { status: normalizedStatus });
@@ -178,7 +178,7 @@ export class BookingsService {
       .leftJoinAndSelect('booking.activity', 'activity')
       .leftJoinAndSelect('booking.payment', 'payment')
       .where('booking.id = :bookingId', { bookingId })
-      .andWhere('booking.userId = :userId', { userId })
+      .andWhere('booking.user_id = :userId', { userId })
       .getOne();
 
     if (!booking) {

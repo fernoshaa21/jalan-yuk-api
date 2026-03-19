@@ -21,42 +21,66 @@ export class BookingsController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  createBooking(
+  async createBooking(
     @Request() req: { user?: Record<string, unknown> },
     @Body() dto: CreateBookingDto,
   ) {
     const userId = this.getUserIdFromRequest(req);
-    return this.bookingsService.createBooking(userId, dto);
+    const booking = await this.bookingsService.createBooking(userId, dto);
+    return {
+      data: booking,
+      message: 'Booking created successfully',
+      meta: null,
+    };
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('my')
-  getMyBookings(
+  async getMyBookings(
     @Request() req: { user?: Record<string, unknown> },
     @Query() query: GetMyBookingsDto,
   ) {
     const userId = this.getUserIdFromRequest(req);
-    return this.bookingsService.getMyBookings(userId, query);
+    const result = await this.bookingsService.getMyBookings(userId, query);
+    return {
+      data: result.data,
+      message: 'My bookings retrieved successfully',
+      meta: result.meta,
+    };
   }
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  getBookingById(
+  async getBookingById(
     @Request() req: { user?: Record<string, unknown> },
     @Param('id') id: string,
   ) {
     const userId = this.getUserIdFromRequest(req);
-    return this.bookingsService.getBookingById(userId, id);
+    const booking = await this.bookingsService.getBookingById(userId, id);
+    return {
+      data: booking,
+      message: 'Booking detail retrieved successfully',
+      meta: null,
+    };
   }
 
   @UseGuards(JwtAuthGuard)
   @Patch(':id/cancel')
-  cancelBooking(
+  async cancelBooking(
     @Request() req: { user?: Record<string, unknown> },
     @Param('id') id: string,
   ) {
     const userId = this.getUserIdFromRequest(req);
-    return this.bookingsService.cancelBooking(userId, id);
+    const result = await this.bookingsService.cancelBooking(userId, id);
+    return {
+      data: {
+        bookingId: result.bookingId,
+        bookingStatus: result.bookingStatus,
+        paymentStatus: result.paymentStatus,
+      },
+      message: result.message,
+      meta: null,
+    };
   }
 
   private getUserIdFromRequest(req: {

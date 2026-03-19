@@ -3,15 +3,12 @@ import {
   Get,
   Query,
   Param,
-  Post,
-  Body,
   HttpCode,
   HttpStatus,
   ParseIntPipe,
 } from '@nestjs/common';
 import { ActivitiesService } from './activities.service';
 import { GetActivitiesDto } from './dto/get-activities.dto';
-import { CreateActivityDto } from './dto/create-activity.dto';
 
 @Controller('activities')
 export class ActivitiesController {
@@ -26,9 +23,9 @@ export class ActivitiesController {
   async getActivities(@Query() getActivitiesDto: GetActivitiesDto) {
     const result = await this.activitiesService.getActivities(getActivitiesDto);
     return {
-      statusCode: HttpStatus.OK,
+      data: result.data,
       message: 'Activities retrieved successfully',
-      ...result,
+      meta: result.meta,
     };
   }
 
@@ -41,9 +38,11 @@ export class ActivitiesController {
   async getFeaturedActivities() {
     const result = await this.activitiesService.getFeaturedActivities();
     return {
-      statusCode: HttpStatus.OK,
+      data: result.data,
       message: 'Featured activities retrieved successfully',
-      ...result,
+      meta: {
+        total: result.total,
+      },
     };
   }
 
@@ -58,25 +57,9 @@ export class ActivitiesController {
   async getActivityById(@Param('id', ParseIntPipe) id: number) {
     const data = await this.activitiesService.getActivityById(id);
     return {
-      statusCode: HttpStatus.OK,
-      message: 'Activity retrieved successfully',
       data,
-    };
-  }
-
-  /**
-   * Create new activity
-   * POST /activities
-   */
-  @Post()
-  @HttpCode(HttpStatus.CREATED)
-  async createActivity(@Body() createActivityDto: CreateActivityDto) {
-    const result =
-      await this.activitiesService.createActivity(createActivityDto);
-    return {
-      statusCode: HttpStatus.CREATED,
-      message: result.message,
-      data: result.data,
+      message: 'Activity retrieved successfully',
+      meta: null,
     };
   }
 }
