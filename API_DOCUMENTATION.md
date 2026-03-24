@@ -164,6 +164,20 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ## 2) Activities Module
 
+### 2.0 Supported Categories (Activity)
+
+Gunakan nilai kategori berikut agar konsisten dengan data seed dan filter backend:
+
+- `adventure`
+- `nature`
+- `culture`
+- `culinary`
+- `city-tour`
+- `water-sport`
+- `family`
+
+> Catatan untuk Flutter: jika memakai enum/parser ketat, pastikan semua nilai di atas sudah didaftarkan.
+
 ### 2.1 List Activities (Home)
 
 - **Method**: `GET`
@@ -174,7 +188,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 #### Query Params
 
 - `search` (optional, string)
-- `category` (optional, string)
+- `category` (optional, string, one of: `adventure|nature|culture|culinary|city-tour|water-sport|family`)
 - `featured` (optional, boolean: `true/false`)
 - `page` (optional, number, default `1`)
 - `limit` (optional, number, default `10`, max `100`)
@@ -207,12 +221,11 @@ Contoh URL:
   ],
   "message": "Activities retrieved successfully",
   "meta": {
-    "total": 1,
     "page": 1,
     "limit": 10,
+    "total": 1,
     "totalPages": 1,
-    "hasNextPage": false,
-    "hasPrevPage": false
+    "hasNext": false
   }
 }
 ```
@@ -224,7 +237,20 @@ Contoh URL:
 - **Method**: `GET`
 - **URL**: `/activities/featured`
 - **Auth**: Tidak
-- **Deskripsi**: Ambil activity unggulan.
+- **Deskripsi**: Ambil activity unggulan (sudah support pagination untuk infinite scroll).
+
+#### Query Params
+
+- `search` (optional, string)
+- `category` (optional, string, one of: `adventure|nature|culture|culinary|city-tour|water-sport|family`)
+- `page` (optional, number, default `1`)
+- `limit` (optional, number, default `10`, max `100`)
+
+Contoh URL:
+
+`/activities/featured?page=1&limit=10`
+
+`/activities/featured?category=adventure&search=jeep&page=1&limit=10`
 
 #### Response 200
 
@@ -250,7 +276,11 @@ Contoh URL:
   ],
   "message": "Featured activities retrieved successfully",
   "meta": {
-    "total": 1
+    "page": 1,
+    "limit": 10,
+    "total": 1,
+    "totalPages": 1,
+    "hasNext": false
   }
 }
 ```
@@ -589,6 +619,8 @@ Semua endpoint admin butuh:
 - **URL**: `/admin/activities`
 - **Auth**: Ya (Bearer token, admin)
 
+Nilai `category` yang direkomendasikan: `adventure`, `nature`, `culture`, `culinary`, `city-tour`, `water-sport`, `family`.
+
 #### Request Body
 
 ```json
@@ -741,7 +773,9 @@ Semua endpoint admin butuh:
 
 1. Panggil `GET /activities?page=1&limit=10`.
 2. Untuk filter kategori/search, tambahkan query params (`category`, `search`, `featured`).
-3. Tampilkan card list memakai `data[]`.
+3. Untuk infinite scroll, pakai `meta.hasNext` untuk menentukan fetch halaman berikutnya (`page + 1`).
+4. Untuk section featured, gunakan `GET /activities/featured?page=1&limit=10` dengan pola infinite scroll yang sama.
+5. Tampilkan card list memakai `data[]`.
 
 ### Step 3 — Open Activity Detail
 

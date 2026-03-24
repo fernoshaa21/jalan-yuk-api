@@ -4,10 +4,18 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { ActivitiesEntity } from './entities/activities.entity';
 import { GetActivitiesDto } from './dto/get-activities.dto';
 import { ActivityDetailDto } from './dto/activity-detail.dto';
+
+type ActivitiesPaginationMeta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+};
 
 @Injectable()
 export class ActivitiesService {
@@ -17,77 +25,14 @@ export class ActivitiesService {
   ) {}
 
   async getActivities(getActivitiesDto: GetActivitiesDto) {
-    const {
-      search,
-      category,
-      featured,
-      page = 1,
-      limit = 10,
-    } = getActivitiesDto;
-
-    // Validate pagination params
-    if (page < 1 || limit < 1 || limit > 100) {
-      throw new BadRequestException('Invalid pagination parameters');
-    }
-
-    const query = this.activitiesRepository.createQueryBuilder('activity');
-
-    // Filter only active activities
-    query.andWhere('activity.isActive = :isActive', { isActive: true });
-
-    // Search by name or description
-    if (search && search.trim()) {
-      query.andWhere(
-        '(activity.name ILIKE :search OR activity.description ILIKE :search)',
-        { search: `%${search.trim()}%` },
-      );
-    }
-
-    // Filter by category
-    if (category && category.trim()) {
-      query.andWhere('activity.category = :category', { category });
-    }
-
-    // Filter by featured
-    if (featured !== undefined) {
-      query.andWhere('activity.isFeatured = :isFeatured', {
-        isFeatured: featured,
-      });
-    }
-
-    // Order by createdAt DESC
-    query.orderBy('activity.createdAt', 'DESC');
-
-    // Pagination
-    const skip = (page - 1) * limit;
-    query.skip(skip).take(limit);
-
-    // Get total count for pagination
-    const [data, total] = await query.getManyAndCount();
-
-    return {
-      data,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-        hasNextPage: page < Math.ceil(total / limit),
-        hasPrevPage: page > 1,
-      },
-    };
+    return this.getPaginatedActivities(getActivitiesDto);
   }
 
-  async getFeaturedActivities() {
-    const data = await this.activitiesRepository.find({
-      where: { isActive: true, isFeatured: true },
-      order: { createdAt: 'DESC' },
+  async getFeaturedActivities(getActivitiesDto: GetActivitiesDto = {}) {
+    return this.getPaginatedActivities({
+      ...getActivitiesDto,
+      featured: true,
     });
-
-    return {
-      data,
-      total: data.length,
-    };
   }
 
   async getActivityById(id: number) {
@@ -162,5 +107,80 @@ export class ActivitiesService {
 
   async findAll(getActivitiesDto: GetActivitiesDto) {
     return this.getActivities(getActivitiesDto);
+  }
+
+  private async getPaginatedActivities(
+    getActivitiesDto: GetActivitiesDto,
+  ): Promise<{
+    data: ActivitiesEntity[];
+    meta: ActivitiesPaginationMeta;
+  }> {
+    const { page, limit } = this.normalizePagination(getActivitiesDto);
+    const query = this.buildActivitiesQuery(getActivitiesDto);
+
+    query.skip((page - 1) * limit).take(limit);
+
+    const [data, total] = await query.getManyAndCount();
+    const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: totalPages > 0 && page < totalPages,
+      },
+    };
+  }
+
+  private buildActivitiesQuery(
+    getActivitiesDto: GetActivitiesDto,
+  ): SelectQueryBuilder<ActivitiesEntity> {
+    const { search, category, featured } = getActivitiesDto;
+    const query = this.activitiesRepository.createQueryBuilder('activity');
+
+    query.andWhere('activity.isActive = :isActive', { isActive: true });
+
+    if (search?.trim()) {
+      query.andWhere(
+        '(activity.name ILIKE :search OR activity.description ILIKE :search)',
+        { search: `%${search.trim()}%` },
+      );
+    }
+
+    if (category?.trim()) {
+      query.andWhere('activity.category = :category', {
+        category: category.trim(),
+      });
+    }
+
+    if (featured !== undefined) {
+      query.andWhere('activity.isFeatured = :isFeatured', {
+        isFeatured: featured,
+      });
+    }
+
+    return query.orderBy('activity.createdAt', 'DESC');
+  }
+
+  private normalizePagination(getActivitiesDto: GetActivitiesDto): {
+    page: number;
+    limit: number;
+  } {
+    const rawPage = getActivitiesDto.page ?? 1;
+    const rawLimit = getActivitiesDto.limit ?? 10;
+
+    const page = Number.isFinite(rawPage) ? Math.max(1, rawPage) : 1;
+    const limit = Number.isFinite(rawLimit)
+      ? Math.min(100, Math.max(1, rawLimit))
+      : 10;
+
+    if (!Number.isInteger(page) || !Number.isInteger(limit)) {
+      throw new BadRequestException('Invalid pagination parameters');
+    }
+
+    return { page, limit };
   }
 }

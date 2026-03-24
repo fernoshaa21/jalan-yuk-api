@@ -20,7 +20,9 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "migration:generate": "typeorm-ts-node-commonjs migration:generate src/database/migrations/migration -d src/database/data-source.ts",
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/database/data-source.ts",
-    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/database/data-source.ts"
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/database/data-source.ts",
+    "seed:activities": "ts-node src/database/seeds/activities.seed.ts",
+    "seed:activities:dev": "ts-node --transpile-only src/database/seeds/activities.seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -44,6 +46,7 @@
     "typeorm": "^0.3.28"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.8.0",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.18.0",
     "@nestjs/cli": "^11.0.0",

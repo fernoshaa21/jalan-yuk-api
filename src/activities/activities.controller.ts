@@ -31,18 +31,17 @@ export class ActivitiesController {
 
   /**
    * Get all featured activities
-   * GET /activities/featured
+   * GET /activities/featured?page=1&limit=10
    */
   @Get('featured')
   @HttpCode(HttpStatus.OK)
-  async getFeaturedActivities() {
-    const result = await this.activitiesService.getFeaturedActivities();
+  async getFeaturedActivities(@Query() getActivitiesDto: GetActivitiesDto) {
+    const result =
+      await this.activitiesService.getFeaturedActivities(getActivitiesDto);
     return {
       data: result.data,
       message: 'Featured activities retrieved successfully',
-      meta: {
-        total: result.total,
-      },
+      meta: result.meta,
     };
   }
 
