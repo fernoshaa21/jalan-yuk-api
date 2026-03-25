@@ -8,6 +8,7 @@ import { Repository, SelectQueryBuilder } from 'typeorm';
 import { ActivitiesEntity } from './entities/activities.entity';
 import { GetActivitiesDto } from './dto/get-activities.dto';
 import { ActivityDetailDto } from './dto/activity-detail.dto';
+import { resolveActivityImageUrl } from '../common/constants/activity-image-map';
 
 type ActivitiesPaginationMeta = {
   page: number;
@@ -58,6 +59,12 @@ export class ActivitiesService {
    * Maps database entity to clean response format
    */
   private formatActivityDetail(activity: ActivitiesEntity): ActivityDetailDto {
+    const normalizedImageUrl = resolveActivityImageUrl(
+      activity.imageUrl,
+      activity.category,
+      activity.id,
+    );
+
     return {
       id: activity.id,
       title: activity.name,
@@ -65,7 +72,7 @@ export class ActivitiesService {
       price: activity.price,
       location: activity.location,
       availableSlots: activity.maxParticipants - activity.currentParticipants,
-      imageUrl: activity.imageUrl,
+      imageUrl: normalizedImageUrl,
       isFeatured: activity.isFeatured,
       category: activity.category,
       rating: activity.rating,
@@ -121,6 +128,15 @@ export class ActivitiesService {
     query.skip((page - 1) * limit).take(limit);
 
     const [data, total] = await query.getManyAndCount();
+
+    data.forEach((activity) => {
+      activity.imageUrl = resolveActivityImageUrl(
+        activity.imageUrl,
+        activity.category,
+        activity.id,
+      );
+    });
+
     const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
 
     return {

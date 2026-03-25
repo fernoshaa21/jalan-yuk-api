@@ -11,6 +11,7 @@ import { BookingEntity, BookingStatus } from './entities/booking.entity';
 import { UserEntity } from '../users/entities/user.entity/user.entity';
 import { ActivitiesEntity } from '../activities/entities/activities.entity';
 import { PaymentStatus } from '../payments/entities/payment.entity';
+import { resolveActivityImageUrl } from '../common/constants/activity-image-map';
 
 @Injectable()
 export class BookingsService {
@@ -146,7 +147,11 @@ export class BookingsService {
           ? {
               id: booking.activity.id,
               title: booking.activity.name,
-              imageUrl: booking.activity.imageUrl,
+              imageUrl: resolveActivityImageUrl(
+                booking.activity.imageUrl,
+                booking.activity.category,
+                booking.activity.id,
+              ),
               location: booking.activity.location,
             }
           : null,
@@ -266,7 +271,11 @@ export class BookingsService {
         ? {
             id: booking.activity.id,
             title: booking.activity.name,
-            imageUrl: booking.activity.imageUrl,
+            imageUrl: resolveActivityImageUrl(
+              booking.activity.imageUrl,
+              booking.activity.category,
+              booking.activity.id,
+            ),
             location: booking.activity.location,
           }
         : null,
@@ -294,7 +303,11 @@ export class BookingsService {
             id: booking.activity.id,
             name: booking.activity.name,
             location: booking.activity.location,
-            imageUrl: booking.activity.imageUrl,
+            imageUrl: resolveActivityImageUrl(
+              booking.activity.imageUrl,
+              booking.activity.category,
+              booking.activity.id,
+            ),
             price: Number(booking.activity.price),
           }
         : null,
@@ -308,7 +321,11 @@ export class BookingsService {
         ? {
             id: booking.activity.id,
             title: booking.activity.name,
-            imageUrl: booking.activity.imageUrl,
+            imageUrl: resolveActivityImageUrl(
+              booking.activity.imageUrl,
+              booking.activity.category,
+              booking.activity.id,
+            ),
             location: booking.activity.location,
             price: Number(booking.activity.price),
           }

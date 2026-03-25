@@ -1,4 +1,10 @@
-import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUrl,
+} from 'class-validator';
 
 export class UpdateActivityDto {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
@@ -41,6 +47,12 @@ export class UpdateActivityDto {
   @IsOptional()
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   @IsString()
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  @IsUrl({
+    require_protocol: true,
+    protocols: ['http', 'https'],
+    require_tld: false,
+  })
   imageUrl?: string;
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call

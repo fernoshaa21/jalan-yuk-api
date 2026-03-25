@@ -12,7 +12,7 @@ export class ActivityDetailDto {
 
   availableSlots: number;
 
-  imageUrl: string | null;
+  imageUrl: string;
 
   isFeatured: boolean;
 

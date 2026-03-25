@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { ActivitiesEntity } from '../../activities/entities/activities.entity';
 import { CreateActivityAdminDto } from './dto/create-activity-admin.dto';
 import { UpdateActivityDto } from './dto/update-activity-admin.dto';
+import { resolveActivityImageUrl } from '../../common/constants/activity-image-map';
 
 @Injectable()
 export class ActivitiesAdminService {
@@ -20,7 +21,7 @@ export class ActivitiesAdminService {
       location: dto.location,
       price: dto.price,
       maxParticipants: dto.availableSlots,
-      imageUrl: dto.imageUrl ?? null,
+      imageUrl: resolveActivityImageUrl(dto.imageUrl, dto.category, 0),
       isFeatured: dto.isFeatured ?? false,
       rating: dto.rating ?? 0,
       isActive: dto.isActive ?? true,
@@ -46,7 +47,13 @@ export class ActivitiesAdminService {
     if (dto.availableSlots !== undefined) {
       activity.maxParticipants = dto.availableSlots;
     }
-    if (dto.imageUrl !== undefined) activity.imageUrl = dto.imageUrl;
+    if (dto.imageUrl !== undefined) {
+      activity.imageUrl = resolveActivityImageUrl(
+        dto.imageUrl,
+        activity.category,
+        activity.id,
+      );
+    }
     if (dto.isFeatured !== undefined) activity.isFeatured = dto.isFeatured;
     if (dto.rating !== undefined) activity.rating = dto.rating;
     if (dto.isActive !== undefined) activity.isActive = dto.isActive;
@@ -81,7 +88,11 @@ export class ActivitiesAdminService {
       location: activity.location,
       price: Number(activity.price),
       availableSlots: activity.maxParticipants,
-      imageUrl: activity.imageUrl,
+      imageUrl: resolveActivityImageUrl(
+        activity.imageUrl,
+        activity.category,
+        activity.id,
+      ),
       isFeatured: activity.isFeatured,
       rating: Number(activity.rating),
       isActive: activity.isActive,
