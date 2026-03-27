@@ -728,6 +728,40 @@ Nilai `category` yang direkomendasikan: `adventure`, `nature`, `culture`, `culin
 
 ---
 
+## 7) Admin Dashboard Module
+
+Semua endpoint admin butuh:
+
+- JWT valid
+- role `admin`
+
+### 7.1 Dashboard Stats
+
+- **Method**: `GET`
+- **URL**: `/admin/dashboard/stats`
+- **Auth**: Ya (Bearer token, admin)
+- **Deskripsi**: Ambil ringkasan statistik utama untuk dashboard admin.
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "totalActivities": 128,
+    "totalBookings": 540,
+    "totalUsers": 1235,
+    "totalRevenue": 45780000,
+    "pendingBookings": 32,
+    "confirmedBookings": 480,
+    "cancelledBookings": 28
+  },
+  "message": "Dashboard stats retrieved successfully",
+  "meta": null
+}
+```
+
+---
+
 ## Error Response Examples
 
 ### 400 Bad Request

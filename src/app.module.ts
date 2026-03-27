@@ -13,6 +13,7 @@ import { UsersModule } from './users/users.module';
 import { CommonModule } from './common/common.module';
 import { TasksModule } from './tasks/tasks.module';
 import { ActivitiesAdminModule } from './admin/activities-admin/activities-admin.module';
+import { DashboardModule } from './admin/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { ActivitiesAdminModule } from './admin/activities-admin/activities-admin
     CommonModule,
     TasksModule,
     ActivitiesAdminModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
