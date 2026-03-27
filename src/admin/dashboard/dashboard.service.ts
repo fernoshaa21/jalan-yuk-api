@@ -6,8 +6,11 @@ import {
   BookingEntity,
   BookingStatus,
 } from '../../bookings/entities/booking.entity';
+import { PaymentStatus } from '../../payments/entities/payment.entity';
 import { UserEntity } from '../../users/entities/user.entity/user.entity';
 import { DashboardStatsDto } from './dto/dashboard-stats.dto';
+import { GetRecentBookingsDto } from './dto/get-recent-bookings.dto';
+import { RecentBookingDto } from './dto/recent-booking.dto';
 
 @Injectable()
 export class DashboardService {
@@ -54,5 +57,40 @@ export class DashboardService {
       confirmedBookings,
       cancelledBookings,
     };
+  }
+
+  async getRecentBookings(
+    queryDto: GetRecentBookingsDto = {},
+  ): Promise<RecentBookingDto[]> {
+    const limit = queryDto.limit ?? 5;
+
+    const bookings = await this.bookingsRepository
+      .createQueryBuilder('booking')
+      .leftJoinAndSelect('booking.user', 'user')
+      .leftJoinAndSelect('booking.activity', 'activity')
+      .leftJoinAndSelect('booking.payment', 'payment')
+      .orderBy('booking.createdAt', 'DESC')
+      .take(limit)
+      .getMany();
+
+    return bookings.map((booking) => ({
+      id: booking.id,
+      user: booking.user
+        ? {
+            id: booking.user.id,
+            fullName: booking.user.fullName,
+          }
+        : null,
+      activity: booking.activity
+        ? {
+            id: booking.activity.id,
+            title: booking.activity.title,
+          }
+        : null,
+      bookingDate: booking.bookingDate,
+      bookingStatus: booking.status,
+      paymentStatus: booking.payment?.paymentStatus ?? PaymentStatus.PENDING,
+      totalPrice: Number(booking.totalPrice),
+    }));
   }
 }

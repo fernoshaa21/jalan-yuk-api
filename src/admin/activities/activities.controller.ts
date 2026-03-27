@@ -1,23 +1,52 @@
 import {
   Body,
   Controller,
+  Get,
   Delete,
   Param,
   ParseIntPipe,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { ActivitiesAdminService } from '../activities-admin/activities-admin.service';
+import { GetAdminActivitiesDto } from './dto/get-admin-activities.dto';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
 
 @Controller('admin/activities')
 export class ActivitiesController {
   constructor(private readonly activitiesService: ActivitiesAdminService) {}
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Get()
+  async getActivities(@Query() query: GetAdminActivitiesDto) {
+    const result = await this.activitiesService.getActivities(query);
+
+    return {
+      data: result.data,
+      message: 'Admin activities retrieved successfully',
+      meta: result.meta,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @Get(':id')
+  async getActivityById(@Param('id', ParseIntPipe) id: number) {
+    const activity = await this.activitiesService.getActivityById(id);
+
+    return {
+      data: activity,
+      message: 'Admin activity detail retrieved successfully',
+      meta: null,
+    };
+  }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')

@@ -13,7 +13,9 @@ import { UsersModule } from './users/users.module';
 import { CommonModule } from './common/common.module';
 import { TasksModule } from './tasks/tasks.module';
 import { ActivitiesAdminModule } from './admin/activities-admin/activities-admin.module';
+import { AdminBookingsModule } from './admin/bookings/bookings.module';
 import { DashboardModule } from './admin/dashboard/dashboard.module';
+import { UploadsModule } from './admin/uploads/uploads.module';
 
 @Module({
   imports: [
@@ -49,7 +51,9 @@ import { DashboardModule } from './admin/dashboard/dashboard.module';
     CommonModule,
     TasksModule,
     ActivitiesAdminModule,
+    AdminBookingsModule,
     DashboardModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

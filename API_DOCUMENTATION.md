@@ -613,7 +613,90 @@ Semua endpoint admin butuh:
 - JWT valid
 - role `admin`
 
-### 6.1 Create Activity
+### 6.1 List Activities
+
+- **Method**: `GET`
+- **URL**: `/admin/activities`
+- **Auth**: Ya (Bearer token, admin)
+- **Deskripsi**: Ambil daftar activity untuk admin panel dengan pagination dan filter.
+
+#### Query Params
+
+- `search` (optional, string, cari berdasarkan title atau location)
+- `category` (optional, string)
+- `isActive` (optional, boolean: `true/false`)
+- `isFeatured` (optional, boolean: `true/false`)
+- `page` (optional, number, default `1`)
+- `limit` (optional, number, default `10`, max `100`)
+
+Contoh URL:
+
+`/admin/activities?page=1&limit=10`
+
+`/admin/activities?search=bogor&category=adventure&isActive=true&isFeatured=false&page=1&limit=10`
+
+#### Response 200
+
+```json
+{
+  "data": [
+    {
+      "id": 10,
+      "title": "Rafting Cisadane",
+      "category": "adventure",
+      "location": "Bogor",
+      "price": 275000,
+      "isActive": true
+    }
+  ],
+  "message": "Admin activities retrieved successfully",
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 100,
+    "totalPages": 10,
+    "hasNext": true
+  }
+}
+```
+
+---
+
+### 6.2 Activity Detail
+
+- **Method**: `GET`
+- **URL**: `/admin/activities/:id`
+- **Auth**: Ya (Bearer token, admin)
+- **Deskripsi**: Ambil detail activity untuk admin berdasarkan ID.
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "id": 10,
+    "title": "Rafting Cisadane",
+    "description": "Paket rafting seru",
+    "price": 275000
+  },
+  "message": "Admin activity detail retrieved successfully",
+  "meta": null
+}
+```
+
+#### Response 404
+
+```json
+{
+  "statusCode": 404,
+  "message": "Activity not found",
+  "error": "Not Found"
+}
+```
+
+---
+
+### 6.3 Create Activity
 
 - **Method**: `POST`
 - **URL**: `/admin/activities`
@@ -664,7 +747,7 @@ Nilai `category` yang direkomendasikan: `adventure`, `nature`, `culture`, `culin
 
 ---
 
-### 6.2 Update Activity
+### 6.4 Update Activity
 
 - **Method**: `PATCH`
 - **URL**: `/admin/activities/:id`
@@ -706,7 +789,7 @@ Nilai `category` yang direkomendasikan: `adventure`, `nature`, `culture`, `culin
 
 ---
 
-### 6.3 Delete Activity (Soft Delete)
+### 6.5 Delete Activity (Soft Delete)
 
 - **Method**: `DELETE`
 - **URL**: `/admin/activities/:id`
@@ -728,14 +811,120 @@ Nilai `category` yang direkomendasikan: `adventure`, `nature`, `culture`, `culin
 
 ---
 
-## 7) Admin Dashboard Module
+## 7) Admin Bookings Module
 
 Semua endpoint admin butuh:
 
 - JWT valid
 - role `admin`
 
-### 7.1 Dashboard Stats
+### 7.1 List Bookings
+
+- **Method**: `GET`
+- **URL**: `/admin/bookings`
+- **Auth**: Ya (Bearer token, admin)
+- **Deskripsi**: Ambil daftar booking untuk admin panel dengan pagination, search, dan filter status.
+
+#### Query Params
+
+- `search` (optional, string, cari berdasarkan nama user atau title activity)
+- `bookingStatus` (optional, one of: `pending|confirmed|cancelled`)
+- `paymentStatus` (optional, one of: `pending|paid|cancelled`)
+- `page` (optional, number, default `1`)
+- `limit` (optional, number, default `10`, max `100`)
+
+Contoh URL:
+
+`/admin/bookings?page=1&limit=10`
+
+`/admin/bookings?search=john&bookingStatus=pending&paymentStatus=pending&page=1&limit=10`
+
+#### Response 200
+
+```json
+{
+  "data": [
+    {
+      "id": "0f6a8e56-4f0a-4f4c-8d7e-1b3e0e6a1234",
+      "user": {
+        "fullName": "John Doe"
+      },
+      "activity": {
+        "title": "Jeep Adventure"
+      },
+      "bookingStatus": "pending",
+      "paymentStatus": "pending",
+      "bookingDate": "2026-03-25T00:00:00.000Z",
+      "totalPrice": 700000,
+      "createdAt": "2026-03-25T08:15:00.000Z"
+    }
+  ],
+  "message": "Admin bookings retrieved successfully",
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 100,
+    "totalPages": 10,
+    "hasNext": true
+  }
+}
+```
+
+#### Notes
+
+- Data diurutkan berdasarkan `booking.createdAt DESC`.
+- Endpoint melakukan join ke relasi `user`, `activity`, dan `payment`.
+- Jika payment belum ada, `paymentStatus` dipetakan ke `pending` agar konsisten dengan flow booking baru di sistem.
+
+---
+
+### 7.2 Booking Detail
+
+- **Method**: `GET`
+- **URL**: `/admin/bookings/:id`
+- **Auth**: Ya (Bearer token, admin)
+- **Deskripsi**: Ambil detail booking untuk admin berdasarkan ID booking.
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "id": "0f6a8e56-4f0a-4f4c-8d7e-1b3e0e6a1234",
+    "bookingStatus": "pending",
+    "paymentStatus": "pending"
+  },
+  "message": "Admin booking detail retrieved successfully",
+  "meta": null
+}
+```
+
+#### Response 404
+
+```json
+{
+  "statusCode": 404,
+  "message": "Booking not found",
+  "error": "Not Found"
+}
+```
+
+#### Notes
+
+- Endpoint mengambil booking berdasarkan `id` dan join ke relasi `payment`.
+- Relasi `user` dan `activity` juga di-join agar siap dipakai jika nanti detail admin diperluas.
+- Jika payment belum ada, `paymentStatus` dipetakan ke `pending` agar konsisten dengan flow booking baru di sistem.
+
+---
+
+## 8) Admin Dashboard Module
+
+Semua endpoint admin butuh:
+
+- JWT valid
+- role `admin`
+
+### 8.1 Dashboard Stats
 
 - **Method**: `GET`
 - **URL**: `/admin/dashboard/stats`
@@ -759,6 +948,98 @@ Semua endpoint admin butuh:
   "meta": null
 }
 ```
+
+---
+
+### 8.2 Recent Bookings
+
+- **Method**: `GET`
+- **URL**: `/admin/dashboard/recent-bookings`
+- **Auth**: Ya (Bearer token, admin)
+- **Deskripsi**: Ambil daftar booking terbaru untuk kebutuhan dashboard admin, diurutkan berdasarkan `createdAt DESC`.
+
+#### Query Params
+
+- `limit` (optional, number, default `5`, max `100`)
+
+Contoh URL:
+
+`/admin/dashboard/recent-bookings`
+
+`/admin/dashboard/recent-bookings?limit=10`
+
+#### Response 200
+
+```json
+{
+  "data": [
+    {
+      "id": "0f6a8e56-4f0a-4f4c-8d7e-1b3e0e6a1234",
+      "user": {
+        "id": 1,
+        "fullName": "John Doe"
+      },
+      "activity": {
+        "id": 10,
+        "title": "Jeep Adventure Bromo"
+      },
+      "bookingDate": "2026-03-25T00:00:00.000Z",
+      "bookingStatus": "pending",
+      "paymentStatus": "pending",
+      "totalPrice": 700000
+    }
+  ],
+  "message": "Recent bookings retrieved successfully",
+  "meta": null
+}
+```
+
+#### Notes
+
+- Data diambil dari booking real terbaru.
+- Query memakai relasi ke `user`, `activity`, dan `payment` jika tersedia.
+- Jika payment belum terbentuk, `paymentStatus` akan bernilai `pending`.
+
+---
+
+## 9) Admin Uploads Module
+
+Semua endpoint admin butuh:
+
+- JWT valid
+- role `admin`
+
+### 9.1 Upload Activity Image
+
+- **Method**: `POST`
+- **URL**: `/admin/uploads/activity-image`
+- **Auth**: Ya (Bearer token, admin)
+- **Content-Type**: `multipart/form-data`
+- **Field file**: `file`
+- **Deskripsi**: Upload image activity ke AWS S3 dan kembalikan URL public file.
+
+#### Validasi File
+
+- format: `image/jpeg`, `image/png`, `image/webp`
+- max size: `5MB`
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "url": "https://your-bucket.s3.ap-southeast-1.amazonaws.com/activities/550e8400-e29b-41d4-a716-446655440000.jpg"
+  },
+  "message": "Image uploaded successfully",
+  "meta": null
+}
+```
+
+#### Notes
+
+- File disimpan ke key dengan format `activities/<generated-filename>`.
+- Nama file dibuat unik agar tidak bentrok.
+- URL public dibentuk dari `AWS_REGION` dan `AWS_S3_BUCKET`.
 
 ---
 
