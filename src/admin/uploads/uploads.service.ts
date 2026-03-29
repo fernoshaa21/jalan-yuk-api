@@ -33,7 +33,7 @@ export class UploadsService {
       this.normalizeExtension(extname(file.originalname)) ??
       this.mimeTypeToExtension(file.mimetype);
 
-    return `${randomUUID()}${extension}`;
+    return `activity-${Date.now()}-${randomUUID()}${extension}`;
   }
 
   private normalizeExtension(extension: string): string | null {

@@ -917,14 +917,79 @@ Contoh URL:
 
 ---
 
-## 8) Admin Dashboard Module
+## 8) Admin Users Module
 
 Semua endpoint admin butuh:
 
 - JWT valid
 - role `admin`
 
-### 8.1 Dashboard Stats
+### 8.1 List Users
+
+- **Method**: `GET`
+- **URL**: `/admin/users`
+- **Auth**: Ya (Bearer token, admin)
+- **Deskripsi**: Ambil daftar user untuk admin panel dengan pagination, search, dan filter sederhana.
+
+#### Query Params
+
+- `search` (optional, string, cari berdasarkan `fullName` atau `email`)
+- `role` (optional, string, contoh: `admin|user`)
+- `isActive` (optional, boolean: `true/false`)
+- `page` (optional, number, default `1`)
+- `limit` (optional, number, default `10`, max `100`)
+
+Contoh URL:
+
+`/admin/users?page=1&limit=10`
+
+`/admin/users?search=john&page=1&limit=10`
+
+`/admin/users?role=user&isActive=true&page=1&limit=10`
+
+#### Response 200
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "fullName": "John Doe",
+      "email": "john@example.com",
+      "role": "user",
+      "isActive": true,
+      "createdAt": "2026-03-19T11:20:00.000Z"
+    }
+  ],
+  "message": "Admin users retrieved successfully",
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 340,
+    "totalPages": 34,
+    "hasNext": true
+  }
+}
+```
+
+#### Notes
+
+- Data diurutkan berdasarkan `user.createdAt DESC`.
+- Search dilakukan dengan `ILIKE` ke field `fullName` dan `email`.
+- Filter `role` dibuat case-insensitive agar query seperti `user` dan `USER` tetap konsisten.
+- Endpoint hanya me-return field aman: `id`, `fullName`, `email`, `role`, `isActive`, `createdAt`.
+- Field sensitif seperti `password` tidak ikut dikembalikan.
+
+---
+
+## 9) Admin Dashboard Module
+
+Semua endpoint admin butuh:
+
+- JWT valid
+- role `admin`
+
+### 9.1 Dashboard Stats
 
 - **Method**: `GET`
 - **URL**: `/admin/dashboard/stats`
@@ -951,7 +1016,7 @@ Semua endpoint admin butuh:
 
 ---
 
-### 8.2 Recent Bookings
+### 9.2 Recent Bookings
 
 - **Method**: `GET`
 - **URL**: `/admin/dashboard/recent-bookings`
@@ -1002,14 +1067,14 @@ Contoh URL:
 
 ---
 
-## 9) Admin Uploads Module
+## 10) Admin Uploads Module
 
 Semua endpoint admin butuh:
 
 - JWT valid
 - role `admin`
 
-### 9.1 Upload Activity Image
+### 10.1 Upload Activity Image
 
 - **Method**: `POST`
 - **URL**: `/admin/uploads/activity-image`
@@ -1028,7 +1093,7 @@ Semua endpoint admin butuh:
 ```json
 {
   "data": {
-    "url": "https://your-bucket.s3.ap-southeast-1.amazonaws.com/activities/550e8400-e29b-41d4-a716-446655440000.jpg"
+    "url": "https://jalanyuk-assets.s3.ap-southeast-1.amazonaws.com/activities/activity-1711729000-550e8400-e29b-41d4-a716-446655440000.jpg"
   },
   "message": "Image uploaded successfully",
   "meta": null
@@ -1037,7 +1102,7 @@ Semua endpoint admin butuh:
 
 #### Notes
 
-- File disimpan ke key dengan format `activities/<generated-filename>`.
+- File disimpan ke key dengan format `activities/activity-<timestamp>-<uuid>.<ext>`.
 - Nama file dibuat unik agar tidak bentrok.
 - URL public dibentuk dari `AWS_REGION` dan `AWS_S3_BUCKET`.
 

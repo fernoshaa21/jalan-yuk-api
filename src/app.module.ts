@@ -16,6 +16,7 @@ import { ActivitiesAdminModule } from './admin/activities-admin/activities-admin
 import { AdminBookingsModule } from './admin/bookings/bookings.module';
 import { DashboardModule } from './admin/dashboard/dashboard.module';
 import { UploadsModule } from './admin/uploads/uploads.module';
+import { AdminUsersModule } from './admin/users/users.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { UploadsModule } from './admin/uploads/uploads.module';
     AdminBookingsModule,
     DashboardModule,
     UploadsModule,
+    AdminUsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
