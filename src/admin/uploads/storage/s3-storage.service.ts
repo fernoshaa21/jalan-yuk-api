@@ -9,27 +9,17 @@ import {
 
 @Injectable()
 export class S3StorageService implements FileStorageService {
-  private readonly region: string;
-  private readonly bucket: string;
-  private readonly client: S3Client;
+  private client: S3Client | null = null;
 
   constructor(private readonly configService: ConfigService) {
-    this.region = this.getRequiredConfig('AWS_REGION');
-    this.bucket = this.getRequiredConfig('AWS_S3_BUCKET');
-
-    this.client = new S3Client({
-      region: this.region,
-      credentials: {
-        accessKeyId: this.getRequiredConfig('AWS_ACCESS_KEY_ID'),
-        secretAccessKey: this.getRequiredConfig('AWS_SECRET_ACCESS_KEY'),
-      },
-    });
   }
 
   async uploadFile(params: UploadFileParams): Promise<UploadFileResult> {
-    await this.client.send(
+    const client = this.getClient();
+
+    await client.send(
       new PutObjectCommand({
-        Bucket: this.bucket,
+        Bucket: this.getBucket(),
         Key: params.key,
         Body: params.buffer,
         ContentType: params.contentType,
@@ -43,11 +33,38 @@ export class S3StorageService implements FileStorageService {
   }
 
   private buildPublicUrl(key: string): string {
-    if (this.region === 'us-east-1') {
-      return `https://${this.bucket}.s3.amazonaws.com/${key}`;
+    const region = this.getRegion();
+    const bucket = this.getBucket();
+
+    if (region === 'us-east-1') {
+      return `https://${bucket}.s3.amazonaws.com/${key}`;
     }
 
-    return `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
+    return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+  }
+
+  private getClient(): S3Client {
+    if (this.client) {
+      return this.client;
+    }
+
+    this.client = new S3Client({
+      region: this.getRegion(),
+      credentials: {
+        accessKeyId: this.getRequiredConfig('AWS_ACCESS_KEY_ID'),
+        secretAccessKey: this.getRequiredConfig('AWS_SECRET_ACCESS_KEY'),
+      },
+    });
+
+    return this.client;
+  }
+
+  private getRegion(): string {
+    return this.getRequiredConfig('AWS_REGION');
+  }
+
+  private getBucket(): string {
+    return this.getRequiredConfig('AWS_S3_BUCKET');
   }
 
   private getRequiredConfig(key: string): string {

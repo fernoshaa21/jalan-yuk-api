@@ -25,10 +25,20 @@ import { SellerDashboardModule } from './seller/dashboard/dashboard.module';
 import { SellerProfileModule } from './seller/profile/profile.module';
 import { SellerUploadsModule } from './seller/uploads/uploads.module';
 
+function shouldServeStaticUploads(): boolean {
+  if (process.env.SERVE_STATIC_UPLOADS !== undefined) {
+    return process.env.SERVE_STATIC_UPLOADS === 'true';
+  }
+
+  return process.env.NODE_ENV !== 'production';
+}
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      cache: true,
+      ignoreEnvFile: process.env.NODE_ENV === 'production',
       envFilePath: '.env',
     }),
     TypeOrmModule.forRootAsync({
@@ -47,16 +57,21 @@ import { SellerUploadsModule } from './seller/uploads/uploads.module';
 
         return {
           ...databaseConfig,
-          entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
+          autoLoadEntities: true,
+          logging: false,
+          migrations: [],
           migrationsRun: false,
         };
       },
     }),
-    ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'uploads'),
-      serveRoot: '/uploads',
-    }),
+    ...(shouldServeStaticUploads()
+      ? [
+          ServeStaticModule.forRoot({
+            rootPath: join(process.cwd(), 'uploads'),
+            serveRoot: '/uploads',
+          }),
+        ]
+      : []),
     AuthModule,
     ActivitiesModule,
     BookingsModule,
