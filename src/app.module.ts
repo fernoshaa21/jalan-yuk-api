@@ -17,6 +17,7 @@ import { AdminBookingsModule } from './admin/bookings/bookings.module';
 import { DashboardModule } from './admin/dashboard/dashboard.module';
 import { UploadsModule } from './admin/uploads/uploads.module';
 import { AdminUsersModule } from './admin/users/users.module';
+import { buildTypeOrmConfig } from './database/typeorm.config';
 import { SellerActivitiesModule } from './seller/activities/activities.module';
 import { SellerAuthModule } from './seller/auth/seller-auth.module';
 import { SellerBookingsModule } from './seller/bookings/bookings.module';
@@ -33,18 +34,24 @@ import { SellerUploadsModule } from './seller/uploads/uploads.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('DB_HOST'),
-        port: configService.get<number>('DB_PORT'),
-        username: configService.get<string>('DB_USERNAME'),
-        password: configService.get<string>('DB_PASSWORD'),
-        database: configService.get<string>('DB_DATABASE'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: false,
-        migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
-        migrationsRun: false,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const databaseConfig = buildTypeOrmConfig({
+          DATABASE_URL: configService.get<string>('DATABASE_URL'),
+          DB_HOST: configService.get<string>('DB_HOST'),
+          DB_PORT: configService.get<string>('DB_PORT'),
+          DB_USERNAME: configService.get<string>('DB_USERNAME'),
+          DB_PASSWORD: configService.get<string>('DB_PASSWORD'),
+          DB_DATABASE: configService.get<string>('DB_DATABASE'),
+          DB_SSL: configService.get<string>('DB_SSL'),
+        });
+
+        return {
+          ...databaseConfig,
+          entities: [__dirname + '/**/*.entity{.ts,.js}'],
+          migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
+          migrationsRun: false,
+        };
+      },
     }),
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),

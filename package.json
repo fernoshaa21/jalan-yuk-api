@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build",
+    "build": "npx nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
@@ -75,6 +75,27 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
+  },
+  "overrides": {
+    "@angular-devkit/core": {
+      "ajv": "8.18.0",
+      "picomatch": "4.0.4"
+    },
+    "@nestjs/core": {
+      "path-to-regexp": "8.4.0"
+    },
+    "@nestjs/platform-express": {
+      "path-to-regexp": "8.4.0"
+    },
+    "@nestjs/serve-static": {
+      "path-to-regexp": "8.4.0"
+    },
+    "router": {
+      "path-to-regexp": "8.4.0"
+    },
+    "fdir": {
+      "picomatch": "4.0.4"
+    }
   },
   "jest": {
     "moduleFileExtensions": [
