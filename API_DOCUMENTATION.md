@@ -1108,6 +1108,582 @@ Semua endpoint admin butuh:
 
 ---
 
+## 11) Seller Auth Module
+
+### 11.1 Seller Register
+
+- **Method**: `POST`
+- **URL**: `/seller/auth/register`
+- **Auth**: Tidak
+- **Deskripsi**: Daftar seller baru dan langsung mendapatkan token JWT. Role seller akan di-set otomatis oleh backend.
+
+#### Request Body
+
+```json
+{
+  "email": "seller@example.com",
+  "password": "password123",
+  "fullName": "Seller One",
+  "phoneNumber": "081234567890"
+}
+```
+
+#### Response 201
+
+```json
+{
+  "data": {
+    "accessToken": "JWT_TOKEN",
+    "user": {
+      "id": 10,
+      "email": "seller@example.com",
+      "fullName": "Seller One",
+      "phoneNumber": "081234567890",
+      "role": "seller"
+    }
+  },
+  "message": "Seller registered successfully",
+  "meta": null
+}
+```
+
+---
+
+### 11.2 Seller Login
+
+- **Method**: `POST`
+- **URL**: `/seller/auth/login`
+- **Auth**: Tidak
+- **Deskripsi**: Login seller dan dapatkan token JWT. Endpoint ini hanya menerima akun dengan role `seller`.
+
+#### Request Body
+
+```json
+{
+  "email": "seller@example.com",
+  "password": "password123"
+}
+```
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "accessToken": "JWT_TOKEN",
+    "user": {
+      "id": 10,
+      "email": "seller@example.com",
+      "fullName": "Seller One",
+      "phoneNumber": "081234567890",
+      "role": "seller"
+    }
+  },
+  "message": "Seller login successful",
+  "meta": null
+}
+```
+
+#### Notes
+
+- Role seller selalu ditentukan backend, bukan dari request body frontend.
+- JWT seller memuat `sub`, `email`, dan `role = seller`.
+
+---
+
+## 12) Seller Activities Module
+
+Semua endpoint seller butuh:
+
+- JWT valid
+- role `seller`
+
+### 12.1 List Activities
+
+- **Method**: `GET`
+- **URL**: `/seller/activities`
+- **Auth**: Ya (Bearer token, seller)
+- **Deskripsi**: Ambil daftar activity milik seller login dengan pagination, search, dan filter.
+
+#### Query Params
+
+- `search` (optional, string, cari berdasarkan title atau location)
+- `category` (optional, string, one of: `adventure|nature|culture|culinary|city-tour|water-sport|family`)
+- `isActive` (optional, boolean: `true/false`)
+- `isFeatured` (optional, boolean: `true/false`)
+- `page` (optional, number, default `1`)
+- `limit` (optional, number, default `10`, max `100`)
+
+#### Response 200
+
+```json
+{
+  "data": [
+    {
+      "id": 10,
+      "title": "Rafting Cisadane",
+      "category": "adventure",
+      "location": "Bogor",
+      "price": 275000,
+      "isActive": true
+    }
+  ],
+  "message": "Seller activities retrieved successfully",
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 5,
+    "totalPages": 1,
+    "hasNext": false
+  }
+}
+```
+
+---
+
+### 12.2 Activity Detail
+
+- **Method**: `GET`
+- **URL**: `/seller/activities/:id`
+- **Auth**: Ya (Bearer token, seller)
+- **Deskripsi**: Ambil detail activity milik seller berdasarkan ID.
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "id": 10,
+    "title": "Rafting Cisadane",
+    "description": "Paket rafting seru",
+    "category": "adventure",
+    "location": "Bogor",
+    "price": 275000,
+    "availableSlots": 20,
+    "imageUrl": "https://cdn.example.com/rafting.jpg",
+    "isFeatured": false,
+    "rating": 4.6,
+    "isActive": true,
+    "createdAt": "2026-03-19T11:20:00.000Z",
+    "updatedAt": "2026-03-19T11:20:00.000Z"
+  },
+  "message": "Seller activity detail retrieved successfully",
+  "meta": null
+}
+```
+
+---
+
+### 12.3 Create Activity
+
+- **Method**: `POST`
+- **URL**: `/seller/activities`
+- **Auth**: Ya (Bearer token, seller)
+- **Deskripsi**: Buat activity baru milik seller login. Ownership seller diisi otomatis oleh backend.
+
+#### Request Body
+
+```json
+{
+  "title": "Rafting Cisadane",
+  "description": "Paket rafting seru untuk pemula dan profesional",
+  "category": "adventure",
+  "location": "Bogor",
+  "price": 275000,
+  "availableSlots": 20,
+  "imageUrl": "https://cdn.example.com/rafting.jpg",
+  "isFeatured": false,
+  "rating": 4.6,
+  "isActive": true
+}
+```
+
+#### Response 201/200
+
+```json
+{
+  "data": {
+    "id": 10,
+    "title": "Rafting Cisadane",
+    "description": "Paket rafting seru untuk pemula dan profesional",
+    "category": "adventure",
+    "location": "Bogor",
+    "price": 275000,
+    "availableSlots": 20,
+    "imageUrl": "https://cdn.example.com/rafting.jpg",
+    "isFeatured": false,
+    "rating": 4.6,
+    "isActive": true,
+    "createdAt": "2026-03-19T11:20:00.000Z",
+    "updatedAt": "2026-03-19T11:20:00.000Z"
+  },
+  "message": "Seller activity created successfully",
+  "meta": null
+}
+```
+
+---
+
+### 12.4 Update Activity
+
+- **Method**: `PATCH`
+- **URL**: `/seller/activities/:id`
+- **Auth**: Ya (Bearer token, seller)
+- **Deskripsi**: Update activity milik seller login.
+
+#### Request Body (partial)
+
+```json
+{
+  "price": 300000,
+  "availableSlots": 24,
+  "isFeatured": true
+}
+```
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "id": 10,
+    "title": "Rafting Cisadane",
+    "description": "Paket rafting seru untuk pemula dan profesional",
+    "category": "adventure",
+    "location": "Bogor",
+    "price": 300000,
+    "availableSlots": 24,
+    "imageUrl": "https://cdn.example.com/rafting.jpg",
+    "isFeatured": true,
+    "rating": 4.6,
+    "isActive": true,
+    "createdAt": "2026-03-19T11:20:00.000Z",
+    "updatedAt": "2026-03-19T11:30:00.000Z"
+  },
+  "message": "Seller activity updated successfully",
+  "meta": null
+}
+```
+
+---
+
+### 12.5 Delete Activity (Soft Delete)
+
+- **Method**: `DELETE`
+- **URL**: `/seller/activities/:id`
+- **Auth**: Ya (Bearer token, seller)
+- **Deskripsi**: Soft delete activity milik seller dengan mengubah `isActive` menjadi `false`.
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "id": 10,
+    "isActive": false
+  },
+  "message": "Seller activity deleted successfully",
+  "meta": null
+}
+```
+
+#### Notes
+
+- Semua query seller activities dibatasi hanya ke activity yang `sellerId`-nya milik seller login.
+- Seller tidak perlu mengirim `sellerId` saat create/update.
+
+---
+
+## 13) Seller Bookings Module
+
+Semua endpoint seller butuh:
+
+- JWT valid
+- role `seller`
+
+### 13.1 List Bookings
+
+- **Method**: `GET`
+- **URL**: `/seller/bookings`
+- **Auth**: Ya (Bearer token, seller)
+- **Deskripsi**: Ambil daftar booking yang masuk ke activity milik seller login.
+
+#### Query Params
+
+- `search` (optional, string, cari berdasarkan nama user atau title activity)
+- `bookingStatus` (optional, one of: `pending|confirmed|cancelled`)
+- `paymentStatus` (optional, one of: `pending|paid|cancelled`)
+- `page` (optional, number, default `1`)
+- `limit` (optional, number, default `10`, max `100`)
+
+#### Response 200
+
+```json
+{
+  "data": [
+    {
+      "id": "0f6a8e56-4f0a-4f4c-8d7e-1b3e0e6a1234",
+      "user": {
+        "fullName": "John Doe"
+      },
+      "activity": {
+        "title": "Jeep Adventure"
+      },
+      "bookingStatus": "pending",
+      "paymentStatus": "pending",
+      "bookingDate": "2026-03-25T00:00:00.000Z",
+      "totalPrice": 700000,
+      "createdAt": "2026-03-25T08:15:00.000Z"
+    }
+  ],
+  "message": "Seller bookings retrieved successfully",
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 25,
+    "totalPages": 3,
+    "hasNext": true
+  }
+}
+```
+
+#### Notes
+
+- Data diurutkan berdasarkan `booking.createdAt DESC`.
+- Query melakukan join ke `user`, `activity`, dan `payment`.
+- Jika payment belum ada, `paymentStatus` dipetakan ke `pending`.
+
+---
+
+### 13.2 Booking Detail
+
+- **Method**: `GET`
+- **URL**: `/seller/bookings/:id`
+- **Auth**: Ya (Bearer token, seller)
+- **Deskripsi**: Ambil detail booking untuk seller berdasarkan ID booking.
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "id": "0f6a8e56-4f0a-4f4c-8d7e-1b3e0e6a1234",
+    "bookingStatus": "pending",
+    "paymentStatus": "pending"
+  },
+  "message": "Seller booking detail retrieved successfully",
+  "meta": null
+}
+```
+
+#### Notes
+
+- Endpoint hanya mengizinkan akses ke booking yang activity-nya milik seller login.
+- Jika payment belum ada, `paymentStatus` dipetakan ke `pending`.
+
+---
+
+## 14) Seller Dashboard Module
+
+Semua endpoint seller butuh:
+
+- JWT valid
+- role `seller`
+
+### 14.1 Dashboard Stats
+
+- **Method**: `GET`
+- **URL**: `/seller/dashboard/stats`
+- **Auth**: Ya (Bearer token, seller)
+- **Deskripsi**: Ambil ringkasan statistik dashboard seller berdasarkan activity milik seller login.
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "totalActivities": 12,
+    "totalBookings": 80,
+    "totalRevenue": 15000000,
+    "pendingBookings": 5,
+    "confirmedBookings": 60,
+    "cancelledBookings": 15
+  },
+  "message": "Seller dashboard stats retrieved successfully",
+  "meta": null
+}
+```
+
+#### Notes
+
+- `totalActivities` dihitung dari jumlah activity milik seller login.
+- `totalBookings` dan seluruh breakdown status hanya dihitung dari booking yang terkait ke activity milik seller login.
+- `totalRevenue` saat ini dihitung dari `SUM(booking.totalPrice)` untuk booking berstatus `confirmed` agar konsisten dengan dashboard admin yang sudah ada.
+
+---
+
+### 14.2 Recent Bookings
+
+- **Method**: `GET`
+- **URL**: `/seller/dashboard/recent-bookings`
+- **Auth**: Ya (Bearer token, seller)
+- **Deskripsi**: Ambil daftar booking terbaru untuk dashboard seller.
+
+#### Query Params
+
+- `limit` (optional, number, default `5`, max `100`)
+
+#### Response 200
+
+```json
+{
+  "data": [
+    {
+      "id": "0f6a8e56-4f0a-4f4c-8d7e-1b3e0e6a1234",
+      "user": {
+        "id": 1,
+        "fullName": "John Doe"
+      },
+      "activity": {
+        "id": 10,
+        "title": "Jeep Adventure Bromo"
+      },
+      "bookingDate": "2026-03-25T00:00:00.000Z",
+      "bookingStatus": "pending",
+      "paymentStatus": "pending",
+      "totalPrice": 700000
+    }
+  ],
+  "message": "Seller recent bookings retrieved successfully",
+  "meta": null
+}
+```
+
+#### Notes
+
+- Data hanya diambil dari booking yang terkait ke activity milik seller login.
+- Query memakai relasi ke `user`, `activity`, dan `payment`.
+- Jika payment belum terbentuk, `paymentStatus` akan bernilai `pending`.
+
+---
+
+## 15) Seller Profile Module
+
+Semua endpoint seller butuh:
+
+- JWT valid
+- role `seller`
+
+### 15.1 Get Profile
+
+- **Method**: `GET`
+- **URL**: `/seller/me`
+- **Auth**: Ya (Bearer token, seller)
+- **Deskripsi**: Ambil data profil seller yang sedang login.
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "id": 10,
+    "email": "seller@example.com",
+    "fullName": "Seller One",
+    "phoneNumber": "081234567890",
+    "avatarUrl": null,
+    "isActive": true,
+    "role": "seller"
+  },
+  "message": "Seller profile retrieved successfully",
+  "meta": null
+}
+```
+
+---
+
+### 15.2 Update Profile
+
+- **Method**: `PATCH`
+- **URL**: `/seller/me`
+- **Auth**: Ya (Bearer token, seller)
+- **Deskripsi**: Update data profil seller yang sedang login.
+
+#### Request Body
+
+```json
+{
+  "fullName": "Seller One Updated",
+  "phoneNumber": "081298765432",
+  "avatarUrl": "https://cdn.example.com/avatar.jpg"
+}
+```
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "id": 10,
+    "email": "seller@example.com",
+    "fullName": "Seller One Updated",
+    "phoneNumber": "081298765432",
+    "avatarUrl": "https://cdn.example.com/avatar.jpg",
+    "isActive": true,
+    "role": "seller"
+  },
+  "message": "Seller profile updated successfully",
+  "meta": null
+}
+```
+
+#### Notes
+
+- Endpoint hanya mengizinkan update field aman: `fullName`, `phoneNumber`, dan `avatarUrl`.
+- Field sensitif seperti `password`, `role`, `isActive`, dan `email` tidak bisa diubah dari endpoint ini.
+- Data seller selalu diambil dari user yang sedang login melalui JWT, bukan dari ID yang dikirim frontend.
+
+---
+
+## 16) Seller Uploads Module
+
+Semua endpoint seller butuh:
+
+- JWT valid
+- role `seller`
+
+### 16.1 Upload Activity Image
+
+- **Method**: `POST`
+- **URL**: `/seller/uploads/activity-image`
+- **Auth**: Ya (Bearer token, seller)
+- **Content-Type**: `multipart/form-data`
+- **Field file**: `file`
+- **Deskripsi**: Upload image activity seller ke AWS S3 dan kembalikan URL public file.
+
+#### Validasi File
+
+- format: `image/jpeg`, `image/png`, `image/webp`
+- max size: `5MB`
+
+#### Response 200
+
+```json
+{
+  "data": {
+    "url": "https://jalanyuk-assets.s3.ap-southeast-1.amazonaws.com/activities/activity-1711729000-550e8400-e29b-41d4-a716-446655440000.jpg"
+  },
+  "message": "Image uploaded successfully",
+  "meta": null
+}
+```
+
+#### Notes
+
+- Endpoint seller upload me-reuse service storage/S3 yang sama dengan admin upload.
+- URL public dibentuk dari `AWS_REGION` dan `AWS_S3_BUCKET`.
+
+---
+
 ## Error Response Examples
 
 ### 400 Bad Request

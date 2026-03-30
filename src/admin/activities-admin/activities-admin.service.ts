@@ -30,12 +30,12 @@ export class ActivitiesAdminService {
 
   async createActivity(dto: CreateActivityAdminDto) {
     const activity = this.activitiesRepository.create({
-      name: dto.title,
+      title: dto.title,
       description: dto.description,
       category: dto.category,
       location: dto.location,
       price: dto.price,
-      maxParticipants: dto.availableSlots,
+      availableSlots: dto.availableSlots,
       imageUrl: resolveActivityImageUrl(dto.imageUrl, dto.category, 0),
       isFeatured: dto.isFeatured ?? false,
       rating: dto.rating ?? 0,
@@ -102,13 +102,13 @@ export class ActivitiesAdminService {
       throw new NotFoundException(`Activity with ID ${id} not found`);
     }
 
-    if (dto.title !== undefined) activity.name = dto.title;
+    if (dto.title !== undefined) activity.title = dto.title;
     if (dto.description !== undefined) activity.description = dto.description;
     if (dto.category !== undefined) activity.category = dto.category;
     if (dto.location !== undefined) activity.location = dto.location;
     if (dto.price !== undefined) activity.price = dto.price;
     if (dto.availableSlots !== undefined) {
-      activity.maxParticipants = dto.availableSlots;
+      activity.availableSlots = dto.availableSlots;
     }
     if (dto.imageUrl !== undefined) {
       activity.imageUrl = resolveActivityImageUrl(

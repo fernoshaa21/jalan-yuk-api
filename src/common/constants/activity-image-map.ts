@@ -99,6 +99,10 @@ function isLocalUploadsPath(url: string): boolean {
   return /^\/uploads\/activities\/[a-z0-9-]+\.(jpg|jpeg|png|webp)$/i.test(url);
 }
 
+function isAbsoluteUrl(url: string): boolean {
+  return /^https?:\/\//i.test(url);
+}
+
 export function getImageByCategory(category: string, index = 0): string {
   const normalizedCategory = normalizeCategory(category);
   const images = activityImageMap[normalizedCategory];
@@ -112,10 +116,18 @@ export function resolveActivityImageUrl(
   index = 0,
 ): string {
   const normalizedUrl = imageUrl?.trim();
+
+  if (!normalizedUrl) {
+    return getImageByCategory(category, index);
+  }
+
+  if (isLocalUploadsPath(normalizedUrl)) {
+    return normalizedUrl;
+  }
+
   if (
-    normalizedUrl &&
-    !isUnstableLegacyImageUrl(normalizedUrl) &&
-    isLocalUploadsPath(normalizedUrl)
+    isAbsoluteUrl(normalizedUrl) &&
+    !isUnstableLegacyImageUrl(normalizedUrl)
   ) {
     return normalizedUrl;
   }

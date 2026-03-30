@@ -17,6 +17,12 @@ import { AdminBookingsModule } from './admin/bookings/bookings.module';
 import { DashboardModule } from './admin/dashboard/dashboard.module';
 import { UploadsModule } from './admin/uploads/uploads.module';
 import { AdminUsersModule } from './admin/users/users.module';
+import { SellerActivitiesModule } from './seller/activities/activities.module';
+import { SellerAuthModule } from './seller/auth/seller-auth.module';
+import { SellerBookingsModule } from './seller/bookings/bookings.module';
+import { SellerDashboardModule } from './seller/dashboard/dashboard.module';
+import { SellerProfileModule } from './seller/profile/profile.module';
+import { SellerUploadsModule } from './seller/uploads/uploads.module';
 
 @Module({
   imports: [
@@ -56,6 +62,12 @@ import { AdminUsersModule } from './admin/users/users.module';
     DashboardModule,
     UploadsModule,
     AdminUsersModule,
+    SellerAuthModule,
+    SellerActivitiesModule,
+    SellerBookingsModule,
+    SellerDashboardModule,
+    SellerProfileModule,
+    SellerUploadsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

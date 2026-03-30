@@ -13,6 +13,7 @@ import * as bcrypt from 'bcrypt';
 import { UserEntity } from '../users/entities/user.entity/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { SELLER_ROLE, USER_ROLE } from '../common/constants/roles';
 
 type PgDriverError = {
   code?: string;
@@ -32,6 +33,34 @@ export class AuthService {
   ) {}
 
   async register(registerDto: RegisterDto) {
+    return this.registerWithRole(registerDto, USER_ROLE, 'User registered successfully');
+  }
+
+  async registerSeller(registerDto: RegisterDto) {
+    return this.registerWithRole(
+      registerDto,
+      SELLER_ROLE,
+      'Seller registered successfully',
+    );
+  }
+
+  async login(loginDto: LoginDto) {
+    return this.loginWithRole(loginDto, null, 'Login successful');
+  }
+
+  async loginSeller(loginDto: LoginDto) {
+    return this.loginWithRole(
+      loginDto,
+      SELLER_ROLE,
+      'Seller login successful',
+    );
+  }
+
+  private async registerWithRole(
+    registerDto: RegisterDto,
+    role: string,
+    successMessage: string,
+  ) {
     const email = registerDto.email?.trim().toLowerCase();
     const password = registerDto.password;
     const fullName = registerDto.fullName?.trim();
@@ -59,30 +88,13 @@ export class AuthService {
         password: hashedPassword,
         fullName,
         phoneNumber,
+        role,
         isActive: true,
       });
 
       const savedUser = await this.usersRepository.save(user);
 
-      // Generate JWT token
-      const payload = {
-        sub: savedUser.id,
-        email: savedUser.email,
-        role: savedUser.role,
-      };
-      const accessToken = this.jwtService.sign(payload);
-
-      return {
-        message: 'User registered successfully',
-        accessToken,
-        user: {
-          id: savedUser.id,
-          email: savedUser.email,
-          fullName: savedUser.fullName,
-          phoneNumber: savedUser.phoneNumber,
-          role: savedUser.role,
-        },
-      };
+      return this.buildAuthSuccessResponse(savedUser, successMessage);
     } catch (error: unknown) {
       if (
         error instanceof ConflictException ||
@@ -121,45 +133,36 @@ export class AuthService {
     }
   }
 
-  async login(loginDto: LoginDto) {
+  private async loginWithRole(
+    loginDto: LoginDto,
+    requiredRole: string | null,
+    successMessage: string,
+  ) {
     const { email, password } = loginDto;
 
-    // Find user by email
     const user = await this.usersRepository.findOne({
-      where: { email },
+      where: { email: email.trim().toLowerCase() },
     });
 
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    // Check if user is active
     if (!user.isActive) {
       throw new UnauthorizedException('User account is inactive');
     }
 
-    // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    // Generate JWT token
-    const payload = { sub: user.id, email: user.email, role: user.role };
-    const accessToken = this.jwtService.sign(payload);
+    if (requiredRole && user.role !== requiredRole) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
 
-    return {
-      message: 'Login successful',
-      accessToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        phoneNumber: user.phoneNumber,
-        role: user.role,
-      },
-    };
+    return this.buildAuthSuccessResponse(user, successMessage);
   }
 
   async validateUser(id: number) {
@@ -179,6 +182,23 @@ export class AuthService {
       avatarUrl: user.avatarUrl,
       isActive: user.isActive,
       role: user.role,
+    };
+  }
+
+  private buildAuthSuccessResponse(user: UserEntity, message: string) {
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    const accessToken = this.jwtService.sign(payload);
+
+    return {
+      message,
+      accessToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+      },
     };
   }
 }

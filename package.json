@@ -22,7 +22,9 @@
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/database/data-source.ts",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/database/data-source.ts",
     "seed:activities": "ts-node src/database/seeds/activities.seed.ts",
-    "seed:activities:dev": "ts-node --transpile-only src/database/seeds/activities.seed.ts"
+    "seed:activities:dev": "ts-node --transpile-only src/database/seeds/activities.seed.ts",
+    "seed:seller-activities": "ts-node src/database/seeds/seller-activities.seed.ts",
+    "seed:seller-activities:dev": "ts-node --transpile-only src/database/seeds/seller-activities.seed.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1018.0",

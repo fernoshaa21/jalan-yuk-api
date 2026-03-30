@@ -4,7 +4,10 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { UserEntity } from '../../users/entities/user.entity/user.entity';
 
 @Entity('activities')
 export class ActivitiesEntity {
@@ -20,7 +23,7 @@ export class ActivitiesEntity {
   @Column()
   location: string;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { precision: 12, scale: 2 })
   price: number;
 
   @Column({ name: 'maxParticipants', type: 'int' })
@@ -43,6 +46,13 @@ export class ActivitiesEntity {
 
   @Column('decimal', { precision: 3, scale: 1, default: 0 })
   rating: number;
+
+  @Column({ type: 'int', nullable: true })
+  sellerId: number | null;
+
+  @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'sellerId' })
+  seller?: UserEntity | null;
 
   @CreateDateColumn()
   createdAt: Date;

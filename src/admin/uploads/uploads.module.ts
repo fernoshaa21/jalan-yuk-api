@@ -18,5 +18,6 @@ import { UploadsService } from './uploads.service';
       useExisting: S3StorageService,
     },
   ],
+  exports: [UploadsService],
 })
 export class UploadsModule {}
