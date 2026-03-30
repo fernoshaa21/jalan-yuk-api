@@ -61,6 +61,8 @@ function shouldServeStaticUploads(): boolean {
           logging: false,
           migrations: [],
           migrationsRun: false,
+          retryAttempts: process.env.NODE_ENV === 'production' ? 2 : 5,
+          retryDelay: 3000,
         };
       },
     }),

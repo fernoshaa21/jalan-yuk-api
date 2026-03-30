@@ -13,11 +13,22 @@ type DatabaseEnv = {
   DB_PASSWORD?: string;
   DB_DATABASE?: string;
   DB_SSL?: string;
+  DB_POOL_MAX?: string;
 };
 
 function parsePort(value?: string): number {
   const port = Number.parseInt(value ?? '5432', 10);
   return Number.isFinite(port) ? port : 5432;
+}
+
+function parsePositiveInt(value: string | undefined, fallback: number): number {
+  const parsed = Number.parseInt(value ?? '', 10);
+
+  if (Number.isFinite(parsed) && parsed > 0) {
+    return parsed;
+  }
+
+  return fallback;
 }
 
 function shouldEnableSsl(env: DatabaseEnv, usingDatabaseUrl: boolean): boolean {
@@ -32,6 +43,7 @@ export function buildTypeOrmConfig(env: DatabaseEnv): DataSourceOptions {
   const databaseUrl = env.DATABASE_URL?.trim();
   const usingDatabaseUrl = Boolean(databaseUrl);
   const sslEnabled = shouldEnableSsl(env, usingDatabaseUrl);
+  const poolMax = parsePositiveInt(env.DB_POOL_MAX, usingDatabaseUrl ? 5 : 10);
 
   const baseConfig: DataSourceOptions = {
     type: 'postgres',
@@ -44,6 +56,11 @@ export function buildTypeOrmConfig(env: DatabaseEnv): DataSourceOptions {
     ],
     migrations: ['src/database/migrations/*.ts'],
     synchronize: false,
+    extra: {
+      max: poolMax,
+      idleTimeoutMillis: 10000,
+      connectionTimeoutMillis: 5000,
+    },
   };
 
   if (usingDatabaseUrl && databaseUrl) {
