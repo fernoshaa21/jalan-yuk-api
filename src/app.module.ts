@@ -46,6 +46,7 @@ function shouldServeStaticUploads(): boolean {
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const databaseConfig = buildTypeOrmConfig({
+          NODE_ENV: configService.get<string>('NODE_ENV'),
           DATABASE_URL: configService.get<string>('DATABASE_URL'),
           DB_HOST: configService.get<string>('DB_HOST'),
           DB_PORT: configService.get<string>('DB_PORT'),
@@ -53,6 +54,7 @@ function shouldServeStaticUploads(): boolean {
           DB_PASSWORD: configService.get<string>('DB_PASSWORD'),
           DB_DATABASE: configService.get<string>('DB_DATABASE'),
           DB_SSL: configService.get<string>('DB_SSL'),
+          DB_POOL_MAX: configService.get<string>('DB_POOL_MAX'),
         });
 
         return {

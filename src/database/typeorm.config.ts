@@ -6,6 +6,7 @@ import { PaymentEntity } from '../payments/entities/payment.entity';
 import { TaskEntity } from '../tasks/task.entity';
 
 type DatabaseEnv = {
+  NODE_ENV?: string;
   DATABASE_URL?: string;
   DB_HOST?: string;
   DB_PORT?: string;
@@ -36,7 +37,7 @@ function shouldEnableSsl(env: DatabaseEnv, usingDatabaseUrl: boolean): boolean {
     return env.DB_SSL === 'true';
   }
 
-  return usingDatabaseUrl;
+  return usingDatabaseUrl && env.NODE_ENV === 'production';
 }
 
 export function buildTypeOrmConfig(env: DatabaseEnv): DataSourceOptions {
@@ -44,6 +45,13 @@ export function buildTypeOrmConfig(env: DatabaseEnv): DataSourceOptions {
   const usingDatabaseUrl = Boolean(databaseUrl);
   const sslEnabled = shouldEnableSsl(env, usingDatabaseUrl);
   const poolMax = parsePositiveInt(env.DB_POOL_MAX, usingDatabaseUrl ? 5 : 10);
+  const sslConfig = sslEnabled ? { rejectUnauthorized: false } : false;
+  const extraConfig = {
+    max: poolMax,
+    idleTimeoutMillis: 10000,
+    connectionTimeoutMillis: 5000,
+    ...(sslEnabled ? { ssl: sslConfig } : {}),
+  };
 
   const baseConfig: DataSourceOptions = {
     type: 'postgres',
@@ -56,18 +64,14 @@ export function buildTypeOrmConfig(env: DatabaseEnv): DataSourceOptions {
     ],
     migrations: ['src/database/migrations/*.ts'],
     synchronize: false,
-    extra: {
-      max: poolMax,
-      idleTimeoutMillis: 10000,
-      connectionTimeoutMillis: 5000,
-    },
+    extra: extraConfig,
   };
 
   if (usingDatabaseUrl && databaseUrl) {
     return {
       ...baseConfig,
       url: databaseUrl,
-      ssl: sslEnabled ? { rejectUnauthorized: false } : false,
+      ssl: sslConfig,
     };
   }
 
@@ -78,6 +82,6 @@ export function buildTypeOrmConfig(env: DatabaseEnv): DataSourceOptions {
     username: env.DB_USERNAME || 'postgres',
     password: env.DB_PASSWORD || 'postgres',
     database: env.DB_DATABASE || 'jalanyuk_db',
-    ssl: sslEnabled ? { rejectUnauthorized: false } : false,
+    ssl: sslConfig,
   };
 }
