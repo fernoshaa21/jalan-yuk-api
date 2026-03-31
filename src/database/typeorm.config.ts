@@ -17,6 +17,12 @@ type DatabaseEnv = {
   DB_POOL_MAX?: string;
 };
 
+export type DatabaseRuntimeOptions = {
+  usingDatabaseUrl: boolean;
+  sslEnabled: boolean;
+  synchronizeEnabled: boolean;
+};
+
 function parsePort(value?: string): number {
   const port = Number.parseInt(value ?? '5432', 10);
   return Number.isFinite(port) ? port : 5432;
@@ -40,10 +46,24 @@ function shouldEnableSsl(env: DatabaseEnv, usingDatabaseUrl: boolean): boolean {
   return usingDatabaseUrl && env.NODE_ENV === 'production';
 }
 
-export function buildTypeOrmConfig(env: DatabaseEnv): DataSourceOptions {
+export function resolveDatabaseRuntimeOptions(
+  env: DatabaseEnv,
+): DatabaseRuntimeOptions {
   const databaseUrl = env.DATABASE_URL?.trim();
   const usingDatabaseUrl = Boolean(databaseUrl);
   const sslEnabled = shouldEnableSsl(env, usingDatabaseUrl);
+
+  return {
+    usingDatabaseUrl,
+    sslEnabled,
+    // Temporary bootstrap for production environments without pre-deploy migrations.
+    synchronizeEnabled: env.NODE_ENV === 'production',
+  };
+}
+
+export function buildTypeOrmConfig(env: DatabaseEnv): DataSourceOptions {
+  const databaseUrl = env.DATABASE_URL?.trim();
+  const { usingDatabaseUrl, sslEnabled } = resolveDatabaseRuntimeOptions(env);
   const poolMax = parsePositiveInt(env.DB_POOL_MAX, usingDatabaseUrl ? 5 : 10);
   const sslConfig = sslEnabled ? { rejectUnauthorized: false } : false;
   const extraConfig = {
@@ -63,7 +83,7 @@ export function buildTypeOrmConfig(env: DatabaseEnv): DataSourceOptions {
       TaskEntity,
     ],
     migrations: ['src/database/migrations/*.ts'],
-    synchronize: true,
+    synchronize: false,
     extra: extraConfig,
   };
 

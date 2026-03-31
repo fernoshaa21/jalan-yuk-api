@@ -17,7 +17,10 @@ import { AdminBookingsModule } from './admin/bookings/bookings.module';
 import { DashboardModule } from './admin/dashboard/dashboard.module';
 import { UploadsModule } from './admin/uploads/uploads.module';
 import { AdminUsersModule } from './admin/users/users.module';
-import { buildTypeOrmConfig } from './database/typeorm.config';
+import {
+  buildTypeOrmConfig,
+  resolveDatabaseRuntimeOptions,
+} from './database/typeorm.config';
 import { SellerActivitiesModule } from './seller/activities/activities.module';
 import { SellerAuthModule } from './seller/auth/seller-auth.module';
 import { SellerBookingsModule } from './seller/bookings/bookings.module';
@@ -45,7 +48,7 @@ function shouldServeStaticUploads(): boolean {
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const databaseConfig = buildTypeOrmConfig({
+        const databaseEnv = {
           NODE_ENV: configService.get<string>('NODE_ENV'),
           DATABASE_URL: configService.get<string>('DATABASE_URL'),
           DB_HOST: configService.get<string>('DB_HOST'),
@@ -55,7 +58,13 @@ function shouldServeStaticUploads(): boolean {
           DB_DATABASE: configService.get<string>('DB_DATABASE'),
           DB_SSL: configService.get<string>('DB_SSL'),
           DB_POOL_MAX: configService.get<string>('DB_POOL_MAX'),
-        });
+        };
+        const runtimeOptions = resolveDatabaseRuntimeOptions(databaseEnv);
+        const databaseConfig = buildTypeOrmConfig(databaseEnv);
+
+        console.warn(
+          `[Database] mode=${runtimeOptions.usingDatabaseUrl ? 'DATABASE_URL' : 'DB_HOST'} ssl=${runtimeOptions.sslEnabled} synchronize=${runtimeOptions.synchronizeEnabled}`,
+        );
 
         return {
           ...databaseConfig,
@@ -63,6 +72,7 @@ function shouldServeStaticUploads(): boolean {
           logging: false,
           migrations: [],
           migrationsRun: false,
+          synchronize: runtimeOptions.synchronizeEnabled,
           retryAttempts: process.env.NODE_ENV === 'production' ? 2 : 5,
           retryDelay: 3000,
         };
