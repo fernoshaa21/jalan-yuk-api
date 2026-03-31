@@ -2,7 +2,9 @@ import {
   BadRequestException,
   Injectable,
   ConflictException,
+  HttpException,
   InternalServerErrorException,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -25,6 +27,8 @@ type PgDriverError = {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectRepository(UserEntity)
     private usersRepository: Repository<UserEntity>,
@@ -49,11 +53,7 @@ export class AuthService {
   }
 
   async loginSeller(loginDto: LoginDto) {
-    return this.loginWithRole(
-      loginDto,
-      SELLER_ROLE,
-      'Seller login successful',
-    );
+    return this.loginWithRole(loginDto, SELLER_ROLE, 'Login successful');
   }
 
   private async registerWithRole(
@@ -72,12 +72,17 @@ export class AuthService {
       );
     }
 
+    this.logAuthEvent(`Register attempt for role=${role} email=${email}`);
+
     try {
       const existingUser = await this.usersRepository.findOne({
         where: { email },
       });
 
       if (existingUser) {
+        this.logAuthEvent(
+          `Register rejected for email=${email}: already exists with role=${existingUser.role}`,
+        );
         throw new ConflictException('Email already exists');
       }
 
@@ -94,11 +99,16 @@ export class AuthService {
 
       const savedUser = await this.usersRepository.save(user);
 
+      this.logAuthEvent(
+        `Register persisted for email=${email}: userId=${savedUser.id} role=${savedUser.role}`,
+      );
+
       return this.buildAuthSuccessResponse(savedUser, successMessage);
     } catch (error: unknown) {
       if (
         error instanceof ConflictException ||
-        error instanceof BadRequestException
+        error instanceof BadRequestException ||
+        error instanceof HttpException
       ) {
         throw error;
       }
@@ -123,11 +133,25 @@ export class AuthService {
           code === '42703' &&
           (detail?.includes('role') || message?.includes('role'))
         ) {
+          this.logger.error(
+            `Register schema mismatch for email=${email}`,
+            error.stack,
+          );
           throw new InternalServerErrorException(
             'Database schema is outdated. Run migrations and retry.',
           );
         }
+
+        this.logger.error(
+          `Register query failed for email=${email}`,
+          error.stack,
+        );
       }
+
+      this.logger.error(
+        `Unexpected register failure for email=${email}`,
+        error instanceof Error ? error.stack : String(error),
+      );
 
       throw new InternalServerErrorException('Failed to register user');
     }
@@ -138,31 +162,98 @@ export class AuthService {
     requiredRole: string | null,
     successMessage: string,
   ) {
-    const { email, password } = loginDto;
+    const normalizedEmail = loginDto.email?.trim().toLowerCase();
+    const password = loginDto.password;
 
-    const user = await this.usersRepository.findOne({
-      where: { email: email.trim().toLowerCase() },
-    });
+    this.logAuthEvent(
+      `Login attempt on ${requiredRole ?? 'public'} auth flow for email=${normalizedEmail ?? '<empty>'}`,
+    );
 
-    if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+    try {
+      if (!normalizedEmail || !password) {
+        throw new BadRequestException('email and password are required');
+      }
+
+      const user = await this.usersRepository.findOne({
+        where: { email: normalizedEmail },
+      });
+
+      this.logAuthEvent(
+        `Login lookup result for email=${normalizedEmail}: found=${Boolean(user)} role=${user?.role ?? 'n/a'} isActive=${user?.isActive ?? 'n/a'}`,
+      );
+
+      if (!user) {
+        this.logAuthEvent(
+          `Login failed for email=${normalizedEmail}: user not found`,
+        );
+        throw new UnauthorizedException('Invalid email or password');
+      }
+
+      if (!user.isActive) {
+        this.logAuthEvent(
+          `Login failed for email=${normalizedEmail}: inactive account`,
+        );
+        throw new UnauthorizedException('User account is inactive');
+      }
+
+      if (requiredRole && user.role !== requiredRole) {
+        this.logAuthEvent(
+          `Login role mismatch for email=${normalizedEmail}: expected=${requiredRole} actual=${user.role}`,
+        );
+        throw new UnauthorizedException('Invalid email or password');
+      }
+
+      if (!user.password?.trim()) {
+        this.logAuthEvent(
+          `Login failed for email=${normalizedEmail}: empty password hash in database`,
+        );
+        throw new UnauthorizedException('Invalid email or password');
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+
+      this.logAuthEvent(
+        `Password compare result for email=${normalizedEmail}: valid=${isPasswordValid}`,
+      );
+
+      if (!isPasswordValid) {
+        this.logAuthEvent(
+          `Login failed for email=${normalizedEmail}: invalid password`,
+        );
+        throw new UnauthorizedException('Invalid email or password');
+      }
+
+      return this.buildAuthSuccessResponse(user, successMessage);
+    } catch (error: unknown) {
+      if (error instanceof UnauthorizedException) {
+        this.logAuthEvent(
+          `Login rejected for email=${normalizedEmail}: ${error.message}`,
+        );
+        throw error;
+      }
+
+      if (error instanceof BadRequestException) {
+        this.logAuthEvent(
+          `Login bad request for email=${normalizedEmail}: ${error.message}`,
+        );
+        throw error;
+      }
+
+      if (error instanceof QueryFailedError) {
+        this.logger.error(
+          `Login query failed for email=${normalizedEmail}`,
+          error.stack,
+        );
+        throw new InternalServerErrorException('Failed to login user');
+      }
+
+      this.logger.error(
+        `Unexpected login failure for email=${normalizedEmail}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+
+      throw new InternalServerErrorException('Failed to login user');
     }
-
-    if (!user.isActive) {
-      throw new UnauthorizedException('User account is inactive');
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid email or password');
-    }
-
-    if (requiredRole && user.role !== requiredRole) {
-      throw new UnauthorizedException('Invalid email or password');
-    }
-
-    return this.buildAuthSuccessResponse(user, successMessage);
   }
 
   async validateUser(id: number) {
@@ -186,8 +277,15 @@ export class AuthService {
   }
 
   private buildAuthSuccessResponse(user: UserEntity, message: string) {
+    const jwtSecret = this.resolveJwtSecret();
+    const jwtSecretPresent = jwtSecret !== 'default-secret';
+
+    this.logAuthEvent(
+      `JWT secret availability during auth response for userId=${user.id}: present=${jwtSecretPresent}`,
+    );
+
     const payload = { sub: user.id, email: user.email, role: user.role };
-    const accessToken = this.jwtService.sign(payload);
+    const accessToken = this.jwtService.sign(payload, { secret: jwtSecret });
 
     return {
       message,
@@ -200,5 +298,28 @@ export class AuthService {
         role: user.role,
       },
     };
+  }
+
+  private resolveJwtSecret(): string {
+    const configuredSecret = this.configService.get<string>('JWT_SECRET')?.trim();
+
+    if (configuredSecret) {
+      return configuredSecret;
+    }
+
+    this.logger.warn(
+      'JWT_SECRET is not configured. Falling back to default-secret. Set JWT_SECRET in production immediately.',
+    );
+
+    return 'default-secret';
+  }
+
+  private logAuthEvent(message: string) {
+    if (process.env.NODE_ENV === 'production') {
+      this.logger.warn(message);
+      return;
+    }
+
+    this.logger.log(message);
   }
 }

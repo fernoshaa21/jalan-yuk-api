@@ -63,7 +63,7 @@ export function buildTypeOrmConfig(env: DatabaseEnv): DataSourceOptions {
       TaskEntity,
     ],
     migrations: ['src/database/migrations/*.ts'],
-    synchronize: false,
+    synchronize: true,
     extra: extraConfig,
   };
 
